@@ -1,4 +1,8 @@
-/* Global styles: imports Tailwind CSS directives. All component styling uses Tailwind utility classes. */
+/* Global styles: imports Tailwind CSS directives and sets Poppins as the default font. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  font-family: 'Poppins', sans-serif;
+}
