@@ -1,0 +1,4 @@
+/* Global styles: imports Tailwind CSS directives. All component styling uses Tailwind utility classes. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
