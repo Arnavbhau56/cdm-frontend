@@ -11,6 +11,13 @@ export interface DeckSummary {
   created_at: string;
 }
 
+export interface Comment {
+  id: string;
+  body: string;
+  author_name: string;
+  created_at: string;
+}
+
 export interface DeckDetail extends DeckSummary {
   original_filename: string;
   business_model: string;
@@ -59,5 +66,17 @@ export class DeckService {
 
   savePreferences(data: FirmPreferences) {
     return this.http.put<FirmPreferences>(`${this.base}/setup/`, data);
+  }
+
+  getComments(deckId: string) {
+    return this.http.get<Comment[]>(`${this.base}/decks/${deckId}/comments/`);
+  }
+
+  addComment(deckId: string, body: string) {
+    return this.http.post<Comment>(`${this.base}/decks/${deckId}/comments/`, { body });
+  }
+
+  deleteComment(deckId: string, commentId: string) {
+    return this.http.delete(`${this.base}/decks/${deckId}/comments/${commentId}/`);
   }
 }
