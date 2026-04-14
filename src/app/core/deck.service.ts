@@ -1,14 +1,18 @@
 // Deck API service: wraps all HTTP calls to the decks and setup backend endpoints.
 
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 
 export interface DeckSummary {
   id: string;
   startup_name: string;
+  sector: string;
   status: string;
+  crm_status: string;
+  founder_email: string;
   created_at: string;
+  latest_comment: { body: string; author_name: string } | null;
 }
 
 export interface Comment {
@@ -24,8 +28,10 @@ export interface DeckDetail extends DeckSummary {
   industry_context: string;
   key_risks: string[];
   founder_questions: string[];
+  emailed_questions: number[];
   error_message: string;
   pdf_url: string;
+  founder_email: string;
 }
 
 export interface FirmPreferences {
@@ -42,8 +48,11 @@ export class DeckService {
 
   constructor(private http: HttpClient) {}
 
-  listDecks() {
-    return this.http.get<DeckSummary[]>(`${this.base}/decks/`);
+  listDecks(filters: { sector?: string; crm_status?: string } = {}) {
+    let params = new HttpParams();
+    if (filters.sector) params = params.set('sector', filters.sector);
+    if (filters.crm_status) params = params.set('crm_status', filters.crm_status);
+    return this.http.get<DeckSummary[]>(`${this.base}/decks/`, { params });
   }
 
   uploadDeck(file: File) {
@@ -56,8 +65,28 @@ export class DeckService {
     return this.http.get<DeckDetail>(`${this.base}/decks/${id}/`);
   }
 
-  emailQuestions(id: string, recipient_email: string) {
-    return this.http.post(`${this.base}/decks/${id}/email/`, { recipient_email });
+  deleteDeck(id: string) {
+    return this.http.delete(`${this.base}/decks/${id}/`);
+  }
+
+  bulkDeleteDecks(ids: string[]) {
+    return this.http.post<{ deleted: number }>(`${this.base}/decks/bulk-delete/`, { ids });
+  }
+
+  updateCrmStatus(id: string, crm_status: string) {
+    return this.http.patch<{ crm_status: string }>(`${this.base}/decks/${id}/crm-status/`, { crm_status });
+  }
+
+  emailQuestions(id: string, recipient_email: string, selected_indices: number[]) {
+    return this.http.post<{ message: string; emailed_questions: number[] }>(
+      `${this.base}/decks/${id}/email/`, { recipient_email, selected_indices }
+    );
+  }
+
+  updateFounderContact(id: string, data: { founder_email: string }) {
+    return this.http.patch<{ founder_email: string }>(
+      `${this.base}/decks/${id}/founder/`, data
+    );
   }
 
   getPreferences() {
