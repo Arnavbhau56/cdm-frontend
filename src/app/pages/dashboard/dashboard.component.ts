@@ -4,6 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgIf, NgFor, DatePipe, NgClass, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { UploadBoxComponent } from '../../components/upload-box/upload-box.component';
 import { DeckService, DeckSummary } from '../../core/deck.service';
@@ -230,9 +231,20 @@ export class DashboardComponent implements OnInit {
 
   bulkDelete() {
     if (!this.selectedIds.size) return;
-    if (!confirm(`Delete ${this.selectedIds.size} deck(s)? This cannot be undone.`)) return;
-    this.deckService.bulkDeleteDecks(Array.from(this.selectedIds)).subscribe({
-      next: () => this.loadDecks(),
+    Swal.fire({
+      title: `Delete ${this.selectedIds.size} deck${this.selectedIds.size > 1 ? 's' : ''}?`,
+      text: 'This cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.deckService.bulkDeleteDecks(Array.from(this.selectedIds)).subscribe({
+        next: () => this.loadDecks(),
+      });
     });
   }
 

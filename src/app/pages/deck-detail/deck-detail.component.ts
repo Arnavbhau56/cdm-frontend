@@ -4,6 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import Swal from 'sweetalert2';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { ResultCardComponent } from '../../components/result-card/result-card.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
@@ -268,9 +269,20 @@ export class DeckDetailComponent implements OnInit {
 
   deleteDeck() {
     if (!this.deck) return;
-    if (!confirm(`Delete "${this.deck.startup_name}"? This cannot be undone.`)) return;
-    this.deckService.deleteDeck(this.deck.id).subscribe({
-      next: () => this.router.navigate(['/dashboard']),
+    Swal.fire({
+      title: `Delete "${this.deck.startup_name}"?`,
+      text: 'This will permanently remove the deck and all its analysis. This cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete',
+      cancelButtonText: 'Cancel',
+    }).then(result => {
+      if (!result.isConfirmed) return;
+      this.deckService.deleteDeck(this.deck!.id).subscribe({
+        next: () => this.router.navigate(['/dashboard']),
+      });
     });
   }
 
