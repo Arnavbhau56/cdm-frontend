@@ -1,8 +1,54 @@
-/* Global styles: imports Tailwind CSS directives and sets Poppins as the default font. */
+/* Global styles: dark theme with Poppins font. */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Poppins', sans-serif;
+:root {
+  --bg:         #0e0f11;
+  --surface:    #16181c;
+  --surface-2:  #1e2128;
+  --border:     #2a2d35;
+  --text:       #e8eaf0;
+  --text-muted: #7a7f8e;
+  --accent:     #f0c040;
+  --accent-dim: rgba(240,192,64,0.12);
+  --radius:     8px;
+  --font-body:  'Poppins', sans-serif;
 }
+
+html { font-size: 15px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, select, textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  padding: 9px 12px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+select option { background: var(--surface-2); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes spin { to { transform: rotate(360deg); } }

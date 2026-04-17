@@ -1,4 +1,4 @@
-// Login page: email/password form that authenticates via JWT and redirects to /dashboard.
+// Login page: dark auth card matching PathCredit Logger design.
 
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -11,34 +11,33 @@ import { AuthService } from '../../core/auth.service';
   standalone: true,
   imports: [FormsModule, NgIf],
   template: `
-    <div class="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 w-full max-w-sm">
-        <h1 class="text-xl font-semibold text-gray-900 mb-1">CDM Capital</h1>
-        <p class="text-sm text-gray-500 mb-6">Deck Analyzer — Sign in to continue</p>
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:20px;">
 
-        <form (ngSubmit)="submit()" #f="ngForm">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
-            <input
-              [(ngModel)]="username" name="username" required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="color:var(--accent);font-size:1.4rem;">◈</span>
+          <div>
+            <div style="font-family:var(--font-body);font-size:.95rem;font-weight:700;letter-spacing:.04em;">CDM Capital</div>
+            <div style="font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;">Deck Analyzer</div>
           </div>
-          <div class="mb-5">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password" [(ngModel)]="password" name="password" required
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        </div>
+
+        <form (ngSubmit)="submit()" #f="ngForm" style="display:flex;flex-direction:column;gap:14px;">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:.78rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;">Username</label>
+            <input [(ngModel)]="username" name="username" required autocomplete="username" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:.78rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;">Password</label>
+            <input type="password" [(ngModel)]="password" name="password" required autocomplete="current-password" />
           </div>
 
-          <p *ngIf="error" class="text-red-600 text-sm mb-4">{{ error }}</p>
+          <p *ngIf="error" style="font-size:.78rem;color:#e05252;">{{ error }}</p>
 
-          <button
-            type="submit" [disabled]="loading"
-            class="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {{ loading ? 'Signing in...' : 'Sign In' }}
+          <button type="submit" [disabled]="loading"
+            style="background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.82rem;font-weight:700;letter-spacing:.04em;padding:11px 18px;cursor:pointer;opacity:1;transition:opacity .15s;"
+            [style.opacity]="loading ? '0.5' : '1'">
+            {{ loading ? 'Signing in…' : 'Sign In' }}
           </button>
         </form>
       </div>

@@ -1,4 +1,4 @@
-// Result card component: renders a single analysis section with a title and slot for content.
+// Result card: dark surface card matching PathCredit Logger activity-card style.
 
 import { Component, Input } from '@angular/core';
 
@@ -6,8 +6,8 @@ import { Component, Input } from '@angular/core';
   selector: 'app-result-card',
   standalone: true,
   template: `
-    <div class="bg-white rounded-xl border border-gray-200 p-8">
-      <h2 class="text-base font-semibold text-gray-900 mb-5">{{ title }}</h2>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;">
+      <h2 style="font-family:var(--font-body);font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:14px;">{{ title }}</h2>
       <ng-content />
     </div>
   `,

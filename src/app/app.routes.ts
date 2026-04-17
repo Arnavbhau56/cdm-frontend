@@ -20,6 +20,11 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
+    path: 'deck/:id/call-notes',
+    loadComponent: () => import('./pages/call-notes/call-notes.component').then(m => m.CallNotesComponent),
+    canActivate: [authGuard],
+  },
+  {
     path: 'setup',
     loadComponent: () => import('./pages/setup/setup.component').then(m => m.SetupComponent),
     canActivate: [authGuard],

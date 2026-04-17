@@ -1,4 +1,4 @@
-// Navbar component: displays CDM Capital branding, settings link, and logout button.
+// Navbar: dark header matching PathCredit Logger brand style.
 
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -9,19 +9,29 @@ import { AuthService } from '../../core/auth.service';
   standalone: true,
   imports: [RouterLink],
   template: `
-    <nav class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-      <span class="text-lg font-semibold text-gray-900">CDM Capital</span>
-      <div class="flex items-center gap-4">
-        <a routerLink="/setup" class="text-gray-500 hover:text-gray-800" title="Settings">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
+    <header style="border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10;">
+      <div style="max-width:95vw;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;">
+        <a routerLink="/dashboard" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+          <span style="color:var(--accent);font-size:1.3rem;">◈</span>
+          <span style="font-family:var(--font-body);font-size:.95rem;font-weight:700;letter-spacing:.04em;">CDM Capital</span>
+          <span style="font-size:.75rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;">Deck Analyzer</span>
         </a>
-        <button (click)="auth.logout()" class="text-sm text-gray-500 hover:text-red-600">Logout</button>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <a routerLink="/setup" title="Settings"
+            style="color:var(--text-muted);font-size:.75rem;letter-spacing:.04em;text-decoration:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;transition:color .15s,border-color .15s;"
+            onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-muted)'"
+            onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">
+            Settings
+          </a>
+          <button (click)="auth.logout()"
+            style="background:none;border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;padding:5px 10px;cursor:pointer;font-family:var(--font-body);transition:color .15s,border-color .15s;"
+            onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-muted)'"
+            onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">
+            Sign out
+          </button>
+        </div>
       </div>
-    </nav>
+    </header>
   `,
 })
 export class NavbarComponent {

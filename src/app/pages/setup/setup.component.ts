@@ -1,4 +1,4 @@
-// Setup page: form to view and update CDM Capital's firm preferences used in AI prompts.
+// Setup page: dark theme form matching PathCredit Logger design.
 
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -11,60 +11,43 @@ import { DeckService, FirmPreferences } from '../../core/deck.service';
   standalone: true,
   imports: [FormsModule, NgIf, NavbarComponent],
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <div style="min-height:100vh;background:var(--bg);">
       <app-navbar />
+      <div style="max-width:640px;margin:0 auto;padding:36px 24px 64px;">
 
-      <div class="max-w-2xl mx-auto px-6 py-8">
-        <h1 class="text-xl font-semibold text-gray-900 mb-6">Firm Preferences</h1>
+        <h1 style="font-family:var(--font-body);font-size:1rem;font-weight:700;letter-spacing:.04em;margin-bottom:24px;">FIRM PREFERENCES</h1>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Sectors Focus</label>
-            <input
-              [(ngModel)]="prefs.sectors_focus"
-              placeholder="e.g. Fintech, SaaS, Deeptech"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;display:flex;flex-direction:column;gap:18px;">
+
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:.78rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;">Sectors Focus</label>
+            <input [(ngModel)]="prefs.sectors_focus" placeholder="e.g. Fintech, SaaS, Deeptech" />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Stage Focus</label>
-            <input
-              [(ngModel)]="prefs.stage_focus"
-              placeholder="e.g. Pre-seed, Seed"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:.78rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;">Stage Focus</label>
+            <input [(ngModel)]="prefs.stage_focus" placeholder="e.g. Pre-seed, Seed" />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Question Style</label>
-            <textarea
-              [(ngModel)]="prefs.question_style"
-              rows="3"
-              placeholder="e.g. Direct, first-principles, focus on defensibility"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            ></textarea>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:.78rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;">Question Style</label>
+            <textarea [(ngModel)]="prefs.question_style" rows="3" placeholder="e.g. Direct, first-principles, focus on defensibility"
+              style="resize:none;"></textarea>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Additional Context</label>
-            <textarea
-              [(ngModel)]="prefs.additional_context"
-              rows="3"
-              placeholder="Any other context for the AI analyst..."
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            ></textarea>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <label style="font-size:.78rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;">Additional Context</label>
+            <textarea [(ngModel)]="prefs.additional_context" rows="3" placeholder="Any other context for the AI analyst…"
+              style="resize:none;"></textarea>
           </div>
 
-          <p *ngIf="saved" class="text-green-600 text-sm">Preferences saved successfully.</p>
-          <p *ngIf="saveError" class="text-red-600 text-sm">{{ saveError }}</p>
+          <p *ngIf="saved" style="font-size:.78rem;color:#3dca7e;">✓ Preferences saved.</p>
+          <p *ngIf="saveError" style="font-size:.78rem;color:#e05252;">{{ saveError }}</p>
 
-          <button
-            (click)="save()"
-            [disabled]="saving"
-            class="bg-indigo-600 text-white text-sm px-5 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-40"
-          >
-            {{ saving ? 'Saving...' : 'Save' }}
+          <button (click)="save()" [disabled]="saving"
+            style="align-self:flex-start;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.78rem;font-weight:700;letter-spacing:.04em;padding:9px 20px;cursor:pointer;transition:opacity .15s;"
+            [style.opacity]="saving ? '0.5' : '1'">
+            {{ saving ? 'Saving…' : 'Save' }}
           </button>
         </div>
       </div>
@@ -79,24 +62,15 @@ export class SetupComponent implements OnInit {
 
   constructor(private deckService: DeckService) {}
 
-  ngOnInit() {
-    this.deckService.getPreferences().subscribe({ next: p => (this.prefs = p) });
-  }
+  ngOnInit() { this.deckService.getPreferences().subscribe({ next: p => (this.prefs = p) }); }
 
   save() {
     this.saving = true;
     this.saved = false;
     this.saveError = '';
     this.deckService.savePreferences(this.prefs).subscribe({
-      next: () => {
-        this.saved = true;
-        this.saving = false;
-        setTimeout(() => (this.saved = false), 3000);
-      },
-      error: err => {
-        this.saveError = err.error?.error || 'Failed to save preferences.';
-        this.saving = false;
-      },
+      next: () => { this.saved = true; this.saving = false; setTimeout(() => (this.saved = false), 3000); },
+      error: err => { this.saveError = err.error?.error || 'Failed to save.'; this.saving = false; },
     });
   }
 }

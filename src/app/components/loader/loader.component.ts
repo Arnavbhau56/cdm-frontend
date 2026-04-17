@@ -1,4 +1,4 @@
-// Loader component: full-screen overlay spinner with a configurable status message.
+// Loader: dark overlay spinner matching PathCredit Logger style.
 
 import { Component, Input } from '@angular/core';
 
@@ -6,9 +6,9 @@ import { Component, Input } from '@angular/core';
   selector: 'app-loader',
   standalone: true,
   template: `
-    <div class="fixed inset-0 bg-white/80 flex flex-col items-center justify-center z-50">
-      <div class="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-      <p class="text-gray-700 text-sm font-medium">{{ message }}</p>
+    <div style="position:fixed;inset:0;background:rgba(14,15,17,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;">
+      <div style="width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px;"></div>
+      <p style="font-size:.82rem;color:var(--text-muted);">{{ message }}</p>
     </div>
   `,
 })

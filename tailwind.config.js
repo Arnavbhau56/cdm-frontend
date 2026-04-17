@@ -1,5 +1,3 @@
-// Tailwind CSS config: scans all Angular component templates for utility class purging.
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ['./src/**/*.{html,ts}'],
@@ -7,6 +5,13 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
+      },
+      colors: {
+        bg:       '#0e0f11',
+        surface:  '#16181c',
+        surface2: '#1e2128',
+        border:   '#2a2d35',
+        accent:   '#f0c040',
       },
     },
   },

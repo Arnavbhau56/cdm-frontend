@@ -22,13 +22,19 @@ export interface Comment {
   created_at: string;
 }
 
+export interface FounderQuestion {
+  question: string;
+  answer: string;
+}
+
 export interface DeckDetail extends DeckSummary {
   original_filename: string;
   business_model: string;
   industry_context: string;
   key_risks: string[];
-  founder_questions: string[];
+  founder_questions: FounderQuestion[];
   emailed_questions: number[];
+  call_notes: Record<string, string>;
   error_message: string;
   pdf_url: string;
   founder_email: string;
@@ -81,6 +87,14 @@ export class DeckService {
     return this.http.post<{ message: string; emailed_questions: number[] }>(
       `${this.base}/decks/${id}/email/`, { recipient_email, selected_indices }
     );
+  }
+
+  saveCallNotes(id: string, call_notes: Record<string, string>) {
+    return this.http.patch<{ call_notes: Record<string, string> }>(`${this.base}/decks/${id}/call-notes/`, { call_notes });
+  }
+
+  saveQuestions(id: string, founder_questions: FounderQuestion[]) {
+    return this.http.patch<{ founder_questions: FounderQuestion[] }>(`${this.base}/decks/${id}/questions/`, { founder_questions });
   }
 
   updateFounderContact(id: string, data: { founder_email: string }) {

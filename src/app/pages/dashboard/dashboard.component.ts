@@ -1,4 +1,4 @@
-// Dashboard: deck table with sector/CRM filters, checkbox selection, bulk delete, email column.
+// Dashboard: dark theme table matching PathCredit Logger design system.
 
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
@@ -9,144 +9,168 @@ import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { UploadBoxComponent } from '../../components/upload-box/upload-box.component';
 import { DeckService, DeckSummary } from '../../core/deck.service';
 
+export const CRM_STATUSES: { value: string; label: string }[] = [
+  { value: 'pending',          label: 'Pending' },
+  { value: 'portfolio',        label: 'Portfolio Company' },
+  { value: 'active',           label: 'Active' },
+  { value: 'decision_needed',  label: 'Decision To Be Taken' },
+  { value: 'dm_call',          label: 'DM Call Setup / TBD' },
+  { value: 'deep_dive',        label: 'Need To Deep Dive' },
+  { value: 'update_requested', label: 'Update Requested / Founder Followed Up' },
+  { value: 'intro_call_done',  label: 'Introductory Call Done' },
+  { value: 'wait_watch',       label: 'Wait and Watch' },
+  { value: 'tracking',         label: 'Tracking' },
+  { value: 'not_raising',      label: 'Not Raising, Introductory Call Done' },
+  { value: 'will_raise',       label: 'Will Raise Soon' },
+  { value: 'early_undecided',  label: 'Early, Undecided' },
+  { value: 'connected_tbd',    label: 'Connected, Calls To Be Decided' },
+  { value: 'unresponsive',     label: 'Founder Unresponsive' },
+  { value: 'not_fit',          label: 'Not a Fit' },
+  { value: 'evaluated_pass',   label: 'Evaluated, Pass' },
+  { value: 'pass',             label: 'Pass' },
+];
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [NgIf, NgFor, NgClass, DatePipe, TitleCasePipe, FormsModule, NavbarComponent, UploadBoxComponent],
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <div style="min-height:100vh;background:var(--bg);">
       <app-navbar />
 
-      <div class="w-[90vw] mx-auto px-6 py-8">
+      <div style="max-width:95vw;margin:0 auto;padding:32px 24px 64px;">
 
         <!-- Header -->
-        <div class="flex items-center justify-between mb-6">
-          <h1 class="text-xl font-semibold text-gray-900">Pitch Decks</h1>
-          <button (click)="showModal = true" class="bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700">
-            + Upload New Deck
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+          <div>
+            <h1 style="font-family:var(--font-body);font-size:1rem;font-weight:700;letter-spacing:.04em;">PITCH DECKS</h1>
+            <p style="font-size:.78rem;color:var(--text-muted);margin-top:2px;">{{ decks.length }} total</p>
+          </div>
+          <button (click)="showModal = true"
+            style="background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.78rem;font-weight:700;letter-spacing:.04em;padding:9px 16px;cursor:pointer;transition:opacity .15s;"
+            onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+            + Upload Deck
           </button>
         </div>
 
-        <!-- Filters + bulk delete toolbar -->
-        <div class="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <div class="flex items-center gap-3 flex-wrap">
+        <!-- Filters + bulk delete -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <!-- Filter chips -->
+            <button
+              [style.background]="!filterCrm ? 'var(--accent-dim)' : 'var(--surface)'"
+              [style.borderColor]="!filterCrm ? 'var(--accent)' : 'var(--border)'"
+              [style.color]="!filterCrm ? 'var(--accent)' : 'var(--text-muted)'"
+              (click)="filterCrm=''; applyFilters()"
+              style="border:1px solid;border-radius:20px;font-size:.75rem;font-weight:500;padding:5px 12px;cursor:pointer;transition:all .15s;">
+              All
+            </button>
             <select [(ngModel)]="filterCrm" (ngModelChange)="applyFilters()"
-              class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+              style="background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text-muted);font-size:.75rem;padding:5px 12px;cursor:pointer;max-width:200px;">
               <option value="">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
+              <option *ngFor="let s of crmStatuses" [value]="s.value">{{ s.label }}</option>
             </select>
-            <input [(ngModel)]="filterSector" (ngModelChange)="applyFilters()" placeholder="Filter by sector..."
-              class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
-            <button *ngIf="filterCrm || filterSector" (click)="clearFilters()" class="text-sm text-gray-400 hover:text-gray-600">Clear</button>
+            <input [(ngModel)]="filterSector" (ngModelChange)="applyFilters()" placeholder="Filter sector…"
+              style="background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text-muted);font-size:.75rem;padding:5px 12px;width:160px;" />
+            <button *ngIf="filterCrm || filterSector" (click)="clearFilters()"
+              style="font-size:.75rem;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:5px;">
+              Clear ×
+            </button>
           </div>
 
-          <!-- Bulk delete -->
-          <div *ngIf="selectedIds.size > 0" class="flex items-center gap-3">
-            <span class="text-sm text-gray-500">{{ selectedIds.size }} selected</span>
+          <div *ngIf="selectedIds.size > 0" style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:.78rem;color:var(--text-muted);">{{ selectedIds.size }} selected</span>
             <button (click)="bulkDelete()"
-              class="inline-flex items-center gap-1.5 text-sm text-red-600 font-medium border border-red-200 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:var(--radius);color:#e05252;font-size:.75rem;padding:5px 12px;cursor:pointer;transition:opacity .15s;">
               Delete Selected
             </button>
           </div>
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th class="px-4 py-3 w-10">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+          <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:12px 16px;width:40px;">
                   <input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll($event)"
-                    class="accent-indigo-600" />
+                    style="accent-color:var(--accent);width:auto;" />
                 </th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Startup</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Sector</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Founder Email</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Uploaded</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Analysis</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Decision</th>
-                <th class="text-left px-4 py-3 font-medium text-gray-600">Latest Note</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">STARTUP</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">SECTOR</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">FOUNDER EMAIL</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">DATE</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">ANALYSIS</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">DECISION</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">LATEST NOTE</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngIf="decks.length === 0">
-                <td colspan="8" class="px-5 py-8 text-center text-gray-400">No decks found.</td>
+                <td colspan="8" style="padding:48px;text-align:center;color:var(--text-muted);font-size:.85rem;">No decks found.</td>
               </tr>
               <tr *ngFor="let deck of decks"
-                class="border-t border-gray-100 hover:bg-gray-50 transition-colors"
-                [class.bg-indigo-50]="selectedIds.has(deck.id)">
+                style="border-top:1px solid var(--border);transition:background .15s;"
+                [style.background]="selectedIds.has(deck.id) ? 'var(--accent-dim)' : 'transparent'"
+                onmouseover="if(!this.style.background.includes('accent'))this.style.background='var(--surface-2)'"
+                onmouseout="this.style.background=''">
 
-                <!-- Checkbox -->
-                <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                <td style="padding:12px 16px;" (click)="$event.stopPropagation()">
                   <input type="checkbox" [checked]="selectedIds.has(deck.id)" (change)="toggleSelect(deck.id)"
-                    class="accent-indigo-600" />
+                    style="accent-color:var(--accent);width:auto;" />
                 </td>
 
-                <!-- Startup name -->
-                <td class="px-4 py-3 font-medium text-gray-900">
-                  <span [class.text-indigo-600]="deck.status === 'complete'"
-                    [class.cursor-pointer]="deck.status === 'complete'"
-                    (click)="openDeck(deck)">{{ deck.startup_name }}</span>
+                <td style="padding:12px 16px;font-weight:500;">
+                  <span
+                    [style.color]="deck.status === 'complete' ? 'var(--accent)' : 'var(--text)'"
+                    [style.cursor]="deck.status === 'complete' ? 'pointer' : 'default'"
+                    (click)="openDeck(deck)">
+                    {{ deck.startup_name }}
+                  </span>
                 </td>
 
-                <!-- Sector -->
-                <td class="px-4 py-3">
-                  <span *ngIf="deck.sector" class="inline-block bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">{{ deck.sector }}</span>
-                  <span *ngIf="!deck.sector" class="text-gray-300">—</span>
+                <td style="padding:12px 16px;">
+                  <span *ngIf="deck.sector"
+                    style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid #4f8ef7;border-radius:4px;padding:2px 7px;color:#4f8ef7;">
+                    {{ deck.sector }}
+                  </span>
+                  <span *ngIf="!deck.sector" style="color:var(--text-muted);">—</span>
                 </td>
 
-                <!-- Founder email -->
-                <td class="px-4 py-3">
+                <td style="padding:12px 16px;">
                   <a *ngIf="deck.founder_email" [href]="'mailto:' + deck.founder_email"
-                    class="text-xs text-indigo-600 hover:underline" (click)="$event.stopPropagation()">
+                    style="font-size:.78rem;color:var(--accent);text-decoration:none;"
+                    (click)="$event.stopPropagation()">
                     {{ deck.founder_email }}
                   </a>
-                  <span *ngIf="!deck.founder_email" class="text-gray-300 text-xs">—</span>
+                  <span *ngIf="!deck.founder_email" style="color:var(--text-muted);">—</span>
                 </td>
 
-                <!-- Date -->
-                <td class="px-4 py-3 text-gray-500">{{ deck.created_at | date:'dd MMM yyyy' }}</td>
+                <td style="padding:12px 16px;color:var(--text-muted);font-size:.82rem;">
+                  {{ deck.created_at | date:'dd MMM yyyy' }}
+                </td>
 
-                <!-- Analysis status -->
-                <td class="px-4 py-3">
-                  <span class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
-                    [ngClass]="{
-                      'bg-yellow-100 text-yellow-700': deck.status === 'processing',
-                      'bg-green-100 text-green-700': deck.status === 'complete',
-                      'bg-red-100 text-red-700': deck.status === 'failed',
-                      'bg-gray-100 text-gray-600': deck.status === 'uploaded'
-                    }">
+                <td style="padding:12px 16px;">
+                  <span style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid;border-radius:4px;padding:2px 7px;"
+                    [style.color]="deck.status === 'complete' ? '#3dca7e' : deck.status === 'processing' ? '#f0c040' : deck.status === 'failed' ? '#e05252' : 'var(--text-muted)'"
+                    [style.borderColor]="deck.status === 'complete' ? '#3dca7e' : deck.status === 'processing' ? '#f0c040' : deck.status === 'failed' ? '#e05252' : 'var(--border)'">
                     {{ deck.status | titlecase }}
                   </span>
                 </td>
 
-                <!-- CRM status dropdown -->
-                <td class="px-4 py-3" (click)="$event.stopPropagation()">
+                <td style="padding:12px 16px;" (click)="$event.stopPropagation()">
                   <select [ngModel]="deck.crm_status" (ngModelChange)="updateCrmStatus(deck, $event)"
-                    class="border rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    [ngClass]="{
-                      'border-yellow-300 bg-yellow-50 text-yellow-700': deck.crm_status === 'pending',
-                      'border-green-300 bg-green-50 text-green-700': deck.crm_status === 'approved',
-                      'border-red-300 bg-red-50 text-red-700': deck.crm_status === 'rejected'
-                    }">
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
+                    style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:.78rem;padding:5px 8px;max-width:190px;cursor:pointer;">
+                    <option *ngFor="let s of crmStatuses" [value]="s.value">{{ s.label }}</option>
                   </select>
                 </td>
 
-                <!-- Latest comment -->
-                <td class="px-4 py-3 max-w-xs">
+                <td style="padding:12px 16px;max-width:200px;">
                   <ng-container *ngIf="deck.latest_comment; else noComment">
-                    <p class="text-xs text-gray-700 truncate">{{ deck.latest_comment.body }}</p>
-                    <p class="text-xs text-gray-400">{{ deck.latest_comment.author_name }}</p>
+                    <p style="font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ deck.latest_comment.body }}</p>
+                    <p style="font-size:.72rem;color:var(--text-muted);">{{ deck.latest_comment.author_name }}</p>
                   </ng-container>
-                  <ng-template #noComment><span class="text-gray-300 text-xs">—</span></ng-template>
+                  <ng-template #noComment><span style="color:var(--text-muted);">—</span></ng-template>
                 </td>
               </tr>
             </tbody>
@@ -156,26 +180,29 @@ import { DeckService, DeckSummary } from '../../core/deck.service';
     </div>
 
     <!-- Upload Modal -->
-    <div *ngIf="showModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
-      <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-base font-semibold text-gray-900">Upload Pitch Deck</h2>
-          <button (click)="closeModal()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+    <div *ngIf="showModal" style="position:fixed;inset:0;background:rgba(14,15,17,.8);display:flex;align-items:center;justify-content:center;z-index:40;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:440px;margin:0 16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <span style="font-family:var(--font-body);font-size:.75rem;letter-spacing:.1em;color:var(--text-muted);">UPLOAD DECK</span>
+          <button (click)="closeModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;line-height:1;">×</button>
         </div>
+
         <ng-container *ngIf="!uploading">
           <app-upload-box (fileSelected)="onFileSelected($event)" />
-          <p *ngIf="uploadError" class="text-red-600 text-sm mt-3">{{ uploadError }}</p>
+          <p *ngIf="uploadError" style="font-size:.78rem;color:#e05252;margin-top:10px;">{{ uploadError }}</p>
           <button (click)="submitUpload()" [disabled]="!selectedFile"
-            class="mt-4 w-full bg-indigo-600 text-white text-sm py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-40">
+            style="margin-top:16px;width:100%;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.78rem;font-weight:700;letter-spacing:.04em;padding:11px;cursor:pointer;opacity:1;transition:opacity .15s;"
+            [style.opacity]="!selectedFile ? '0.4' : '1'">
             Analyze Deck
           </button>
         </ng-container>
+
         <ng-container *ngIf="uploading">
-          <div class="flex flex-col items-center py-8">
-            <div class="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p class="text-sm text-gray-600">{{ uploadMessage }}</p>
+          <div style="display:flex;flex-direction:column;align-items:center;padding:32px 0;">
+            <div style="width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px;"></div>
+            <p style="font-size:.82rem;color:var(--text-muted);">{{ uploadMessage }}</p>
           </div>
-          <p *ngIf="uploadError" class="text-red-600 text-sm text-center">{{ uploadError }}</p>
+          <p *ngIf="uploadError" style="font-size:.78rem;color:#e05252;text-align:center;">{{ uploadError }}</p>
         </ng-container>
       </div>
     </div>
@@ -191,6 +218,7 @@ export class DashboardComponent implements OnInit {
   uploadError = '';
   filterSector = '';
   filterCrm = '';
+  crmStatuses = CRM_STATUSES;
   private pollInterval: any;
 
   constructor(private deckService: DeckService, private router: Router) {}
@@ -199,7 +227,7 @@ export class DashboardComponent implements OnInit {
 
   loadDecks() {
     this.deckService.listDecks({ sector: this.filterSector, crm_status: this.filterCrm })
-      .subscribe({ next: d => { this.decks = d; this.selectedIds.clear(); } });
+      .subscribe({ next: d => { this.decks = d; this.selectedIds = new Set(); } });
   }
 
   applyFilters() { this.loadDecks(); }
@@ -210,7 +238,6 @@ export class DashboardComponent implements OnInit {
     this.loadDecks();
   }
 
-  // Selection
   toggleSelect(id: string) {
     if (this.selectedIds.has(id)) this.selectedIds.delete(id);
     else this.selectedIds.add(id);
@@ -218,11 +245,9 @@ export class DashboardComponent implements OnInit {
   }
 
   toggleAll(e: Event) {
-    if ((e.target as HTMLInputElement).checked) {
-      this.selectedIds = new Set(this.decks.map(d => d.id));
-    } else {
-      this.selectedIds = new Set();
-    }
+    this.selectedIds = (e.target as HTMLInputElement).checked
+      ? new Set(this.decks.map(d => d.id))
+      : new Set();
   }
 
   isAllSelected(): boolean {
@@ -235,9 +260,11 @@ export class DashboardComponent implements OnInit {
       title: `Delete ${this.selectedIds.size} deck${this.selectedIds.size > 1 ? 's' : ''}?`,
       text: 'This cannot be undone.',
       icon: 'warning',
+      background: '#16181c',
+      color: '#e8eaf0',
       showCancelButton: true,
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#6b7280',
+      confirmButtonColor: '#e05252',
+      cancelButtonColor: '#2a2d35',
       confirmButtonText: 'Yes, delete',
       cancelButtonText: 'Cancel',
     }).then(result => {
@@ -271,7 +298,7 @@ export class DashboardComponent implements OnInit {
         this.pollStatus(res.id);
       },
       error: err => {
-        this.uploadError = err.error?.error || 'Upload failed. Please try again.';
+        this.uploadError = err.error?.error || 'Upload failed.';
         this.uploading = false;
       },
     });

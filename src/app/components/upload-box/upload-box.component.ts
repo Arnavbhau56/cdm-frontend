@@ -1,5 +1,4 @@
-// Upload box component: drag-and-drop file input that accepts PDF, PPT, and PPTX files.
-// Emits the selected File object to the parent via (fileSelected).
+// Upload box: dark drag-and-drop file input matching PathCredit Logger style.
 
 import { Component, EventEmitter, Output } from '@angular/core';
 import { NgIf } from '@angular/common';
@@ -10,19 +9,19 @@ import { NgIf } from '@angular/common';
   imports: [NgIf],
   template: `
     <div
-      class="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center cursor-pointer hover:border-indigo-400 transition-colors"
-      [class.border-indigo-500]="dragging"
       (dragover)="onDragOver($event)"
       (dragleave)="dragging = false"
       (drop)="onDrop($event)"
       (click)="fileInput.click()"
-    >
-      <p class="text-gray-500 text-sm">
+      style="border:2px dashed;border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;"
+      [style.borderColor]="dragging ? 'var(--accent)' : 'var(--border)'"
+      [style.background]="dragging ? 'var(--accent-dim)' : 'var(--surface-2)'">
+      <p style="font-size:.82rem;color:var(--text-muted);">
         Drag & drop a PDF, PPT, or PPTX here, or
-        <span class="text-indigo-600 font-medium">browse</span>
+        <span style="color:var(--accent);font-weight:600;">browse</span>
       </p>
-      <p *ngIf="selectedFile" class="mt-2 text-xs text-gray-700 font-medium">{{ selectedFile.name }}</p>
-      <input #fileInput type="file" accept=".pdf,.ppt,.pptx" class="hidden" (change)="onFileChange($event)" />
+      <p *ngIf="selectedFile" style="margin-top:8px;font-size:.78rem;color:var(--text);font-family:var(--font-body);">{{ selectedFile.name }}</p>
+      <input #fileInput type="file" accept=".pdf,.ppt,.pptx" style="display:none;" (change)="onFileChange($event)" />
     </div>
   `,
 })
@@ -31,25 +30,8 @@ export class UploadBoxComponent {
   selectedFile: File | null = null;
   dragging = false;
 
-  onDragOver(e: DragEvent) {
-    e.preventDefault();
-    this.dragging = true;
-  }
-
-  onDrop(e: DragEvent) {
-    e.preventDefault();
-    this.dragging = false;
-    const file = e.dataTransfer?.files[0];
-    if (file) this.setFile(file);
-  }
-
-  onFileChange(e: Event) {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (file) this.setFile(file);
-  }
-
-  private setFile(file: File) {
-    this.selectedFile = file;
-    this.fileSelected.emit(file);
-  }
+  onDragOver(e: DragEvent) { e.preventDefault(); this.dragging = true; }
+  onDrop(e: DragEvent) { e.preventDefault(); this.dragging = false; const f = e.dataTransfer?.files[0]; if (f) this.setFile(f); }
+  onFileChange(e: Event) { const f = (e.target as HTMLInputElement).files?.[0]; if (f) this.setFile(f); }
+  private setFile(f: File) { this.selectedFile = f; this.fileSelected.emit(f); }
 }
