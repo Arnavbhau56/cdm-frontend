@@ -9,26 +9,7 @@ import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { UploadBoxComponent } from '../../components/upload-box/upload-box.component';
 import { DeckService, DeckSummary } from '../../core/deck.service';
 
-export const CRM_STATUSES: { value: string; label: string }[] = [
-  { value: 'pending',          label: 'Pending' },
-  { value: 'portfolio',        label: 'Portfolio Company' },
-  { value: 'active',           label: 'Active' },
-  { value: 'decision_needed',  label: 'Decision To Be Taken' },
-  { value: 'dm_call',          label: 'DM Call Setup / TBD' },
-  { value: 'deep_dive',        label: 'Need To Deep Dive' },
-  { value: 'update_requested', label: 'Update Requested / Founder Followed Up' },
-  { value: 'intro_call_done',  label: 'Introductory Call Done' },
-  { value: 'wait_watch',       label: 'Wait and Watch' },
-  { value: 'tracking',         label: 'Tracking' },
-  { value: 'not_raising',      label: 'Not Raising, Introductory Call Done' },
-  { value: 'will_raise',       label: 'Will Raise Soon' },
-  { value: 'early_undecided',  label: 'Early, Undecided' },
-  { value: 'connected_tbd',    label: 'Connected, Calls To Be Decided' },
-  { value: 'unresponsive',     label: 'Founder Unresponsive' },
-  { value: 'not_fit',          label: 'Not a Fit' },
-  { value: 'evaluated_pass',   label: 'Evaluated, Pass' },
-  { value: 'pass',             label: 'Pass' },
-];
+import { CRM_STATUSES } from '../../shared/crm-statuses';
 
 @Component({
   selector: 'app-dashboard',

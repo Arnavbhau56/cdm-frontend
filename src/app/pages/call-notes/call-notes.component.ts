@@ -1,44 +1,29 @@
-// Call Notes page: rich-text editable sections with bold/italic/bullet toolbar.
+// Call Notes page: editable sections + other materials tab.
 
-import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { NgIf, NgFor } from '@angular/common';
+import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import jsPDF from 'jspdf';
+import Swal from 'sweetalert2';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
-import { DeckService, DeckDetail } from '../../core/deck.service';
-
-interface Section { key: string; label: string; }
-
-const SECTIONS: Section[] = [
-  { key: 'overview',               label: 'Overview' },
-  { key: 'problem',                label: 'Problem' },
-  { key: 'solution',               label: 'Solution / Product' },
-  { key: 'product_business_model', label: 'Product & Business Model' },
-  { key: 'traction_metrics',       label: 'Traction & Metrics' },
-  { key: 'founding_team',          label: 'Founding Team' },
-  { key: 'competition',            label: 'Competition' },
-  { key: 'roadmap_gtm',            label: 'Roadmap / GTM / Expansion' },
-  { key: 'fundraise_history',      label: 'Fundraise History & Current Raise' },
-];
+import { DeckService, DeckDetail, DeckMaterial } from '../../core/deck.service';
+import { CALL_NOTE_SECTIONS } from '../../shared/call-note-sections';
+import { extractTextFromPdf, parseSectionsFromText } from '../../shared/pdf-parser.util';
 
 @Component({
   selector: 'app-call-notes',
   standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgIf, NgFor, FormsModule, NavbarComponent, LoaderComponent, RouterLink],
+  imports: [NgIf, NgFor, FormsModule, DatePipe, NavbarComponent, LoaderComponent, RouterLink],
   styles: [`
     .editor {
       min-height: 80px; width: 100%; box-sizing: border-box;
       font-size: .85rem; line-height: 1.7; font-family: var(--font-body);
       background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
-      color: var(--text); padding: 10px 12px;
-      outline: none; word-break: break-word;
+      color: var(--text); padding: 10px 12px; outline: none; word-break: break-word;
     }
     .editor:focus { border-color: var(--accent); }
     .editor:empty:before { content: attr(data-placeholder); color: var(--text-muted); pointer-events: none; }
-    .editor div { min-height: 1.4em; }
     .toolbar { display: flex; gap: 4px; margin-bottom: 8px; }
     .toolbar button {
       background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
@@ -50,7 +35,7 @@ const SECTIONS: Section[] = [
   template: `
     <div style="min-height:100vh;background:var(--bg);">
       <app-navbar />
-      <app-loader *ngIf="loading" message="Loading call notes..." />
+      <app-loader *ngIf="loading" message="Loading..." />
 
       <div *ngIf="!loading && deck" style="max-width:88vw;margin:0 auto;padding:36px 24px 64px;">
 
@@ -64,18 +49,18 @@ const SECTIONS: Section[] = [
             </span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <button (click)="downloadCallNotesPdf()"
-              style="display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 14px;cursor:pointer;">
-              ↓ Download Call Notes
-            </button>
+            <a *ngIf="deck.pdf_url" [href]="deck.pdf_url" target="_blank" rel="noopener noreferrer"
+              style="font-size:.72rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 14px;text-decoration:none;">
+              ↓ Download Deck
+            </a>
             <a [routerLink]="['/deck', deck.id]"
-              style="font-size:.72rem;font-weight:700;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 14px;text-decoration:none;cursor:pointer;">
+              style="font-size:.72rem;font-weight:700;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:7px 14px;text-decoration:none;">
               View Deck Analysis
             </a>
           </div>
         </div>
 
-        <!-- Tab switcher -->
+        <!-- Top tab switcher: Deck Analysis | Call Notes -->
         <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content;margin-bottom:28px;">
           <a [routerLink]="['/deck', deck.id]"
             style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);border-right:1px solid var(--border);">
@@ -86,46 +71,124 @@ const SECTIONS: Section[] = [
           </span>
         </div>
 
-        <!-- Sections -->
-        <div style="display:flex;flex-direction:column;gap:16px;">
-          <div *ngFor="let section of sections"
-            style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+        <!-- Sub-tab switcher: Notes | Other Materials -->
+        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content;margin-bottom:24px;">
+          <button (click)="activeTab='notes'"
+            [style.color]="activeTab==='notes' ? 'var(--accent)' : 'var(--text-muted)'"
+            [style.background]="activeTab==='notes' ? 'var(--accent-dim)' : 'var(--surface)'"
+            style="font-size:.75rem;font-weight:600;padding:7px 16px;border:none;border-right:1px solid var(--border);cursor:pointer;">
+            Notes
+          </button>
+          <button (click)="activeTab='materials'"
+            [style.color]="activeTab==='materials' ? 'var(--accent)' : 'var(--text-muted)'"
+            [style.background]="activeTab==='materials' ? 'var(--accent-dim)' : 'var(--surface)'"
+            style="font-size:.75rem;font-weight:600;padding:7px 16px;border:none;cursor:pointer;">
+            Other Materials
+          </button>
+        </div>
 
-            <!-- Section header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);">
-              <span style="font-size:.78rem;font-weight:600;color:var(--text);letter-spacing:.02em;">{{ section.label }}</span>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span *ngIf="filled[section.key]"
-                  style="font-size:.65rem;color:#3dca7e;background:rgba(61,202,126,.1);border:1px solid rgba(61,202,126,.3);border-radius:4px;padding:2px 7px;font-weight:600;">
-                  ✓ Filled
-                </span>
-                <span *ngIf="!filled[section.key]"
-                  style="font-size:.65rem;color:var(--text-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;">
-                  Empty
-                </span>
-                <button (click)="saveSection(section.key)" [disabled]="savingKey === section.key"
-                  style="font-size:.65rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:3px 10px;cursor:pointer;transition:opacity .15s;"
-                  [style.opacity]="savingKey === section.key ? '0.5' : '1'">
-                  {{ savingKey === section.key ? 'Saving…' : savedKey === section.key ? '✓ Saved' : 'Save' }}
-                </button>
+        <!-- ── NOTES TAB ── -->
+        <div *ngIf="activeTab === 'notes'">
+
+          <!-- Auto-populate from PDF -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+              <div>
+                <p style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:2px;">Auto-populate from PDF</p>
+                <p style="font-size:.75rem;color:var(--text-muted);">Upload a call notes PDF with section headings — fields will be filled automatically.</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span *ngIf="parsing" style="font-size:.75rem;color:var(--text-muted);">Parsing PDF…</span>
+                <span *ngIf="parseSuccess" style="font-size:.75rem;color:#3dca7e;">✓ {{ parsedCount }} sections populated</span>
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 14px;cursor:pointer;">
+                  <input type="file" accept=".pdf" style="display:none;" (change)="onPdfUpload($event)" />
+                  ↑ Upload PDF
+                </label>
               </div>
             </div>
+          </div>
 
-            <!-- Toolbar + Editor -->
-            <div style="padding:14px 18px;">
-              <div class="toolbar">
-                <button (mousedown)="fmt($event,'bold')" title="Bold"><b>B</b></button>
-                <button (mousedown)="fmt($event,'italic')" title="Italic"><i>I</i></button>
-                <button (mousedown)="fmt($event,'bullet')" title="Bullet list">• List</button>
+          <!-- Sections -->
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div *ngFor="let section of sections"
+              style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);">
+                <span style="font-size:.78rem;font-weight:600;color:var(--text);">{{ section.label }}</span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span *ngIf="filled[section.key]"
+                    style="font-size:.65rem;color:#3dca7e;background:rgba(61,202,126,.1);border:1px solid rgba(61,202,126,.3);border-radius:4px;padding:2px 7px;font-weight:600;">
+                    ✓ Filled
+                  </span>
+                  <span *ngIf="!filled[section.key]"
+                    style="font-size:.65rem;color:var(--text-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;">
+                    Empty
+                  </span>
+                  <button (click)="saveSection(section.key)" [disabled]="savingKey === section.key"
+                    style="font-size:.65rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:3px 10px;cursor:pointer;"
+                    [style.opacity]="savingKey === section.key ? '0.5' : '1'">
+                    {{ savingKey === section.key ? 'Saving…' : savedKey === section.key ? '✓ Saved' : 'Save' }}
+                  </button>
+                </div>
               </div>
-              <div
-                class="editor"
-                [id]="'editor-' + section.key"
-                contenteditable="true"
-                [attr.data-placeholder]="'Add notes for ' + section.label + '...'"
-                (input)="onInput(section.key, $event)"
-                (paste)="onPaste($event)"
-                (keydown)="onKeydown($event)">
+
+              <div style="padding:14px 18px;">
+                <div class="toolbar">
+                  <button (mousedown)="fmt($event,'bold')" title="Bold"><b>B</b></button>
+                  <button (mousedown)="fmt($event,'italic')" title="Italic"><i>I</i></button>
+                  <button (mousedown)="fmt($event,'bullet')" title="Bullet">• List</button>
+                </div>
+                <div
+                  class="editor"
+                  [id]="'editor-' + section.key"
+                  contenteditable="true"
+                  [attr.data-placeholder]="'Add notes for ' + section.label + '...'"
+                  (input)="onInput(section.key, $event)"
+                  (paste)="onPaste($event)"
+                  (keydown)="onKeydown($event)">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── OTHER MATERIALS TAB ── -->
+        <div *ngIf="activeTab === 'materials'">
+
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+              <div>
+                <p style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:2px;">Upload Material</p>
+                <p style="font-size:.75rem;color:var(--text-muted);">Financials, pitch notes, term sheets, or any other file.</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span *ngIf="uploadingMaterial" style="font-size:.75rem;color:var(--text-muted);">Uploading…</span>
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:.75rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 14px;cursor:pointer;">
+                  <input type="file" style="display:none;" (change)="onMaterialUpload($event)" />
+                  ↑ Upload File
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div *ngIf="materials.length === 0"
+              style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;text-align:center;color:var(--text-muted);font-size:.85rem;">
+              No materials uploaded yet.
+            </div>
+            <div *ngFor="let m of materials"
+              style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <div style="flex:1;min-width:0;">
+                <p style="font-size:.88rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ m.name }}</p>
+                <p style="font-size:.72rem;color:var(--text-muted);margin-top:2px;">{{ m.created_at | date:'dd MMM yyyy, h:mm a' }}</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <a [href]="m.url" target="_blank" rel="noopener noreferrer"
+                  style="font-size:.72rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:4px;padding:4px 10px;text-decoration:none;">
+                  Open
+                </a>
+                <button (click)="deleteMaterial(m.id)"
+                  style="background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer;padding:2px 5px;border-radius:4px;line-height:1;">×</button>
               </div>
             </div>
           </div>
@@ -140,18 +203,25 @@ const SECTIONS: Section[] = [
 export class CallNotesComponent implements OnInit {
   deck: DeckDetail | null = null;
   loading = true;
+  activeTab: 'notes' | 'materials' = 'notes';
+
   savingKey: string | null = null;
   savedKey: string | null = null;
-  sections = SECTIONS;
+  sections = CALL_NOTE_SECTIONS;
   notes: Record<string, string> = {};
-  // Separate stable boolean map — only updated explicitly, never during CD
   filled: Record<string, boolean> = {};
+
+  parsing = false;
+  parseSuccess = false;
+  parsedCount = 0;
+
+  materials: DeckMaterial[] = [];
+  uploadingMaterial = false;
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private deckService: DeckService,
-    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit() {
@@ -159,35 +229,70 @@ export class CallNotesComponent implements OnInit {
     this.deckService.getDeck(id).subscribe({
       next: d => {
         this.deck = d;
-        this.notes = {};
-        this.filled = {};
-        SECTIONS.forEach(s => {
+        CALL_NOTE_SECTIONS.forEach(s => {
           this.notes[s.key] = d.call_notes?.[s.key] ?? '';
           this.filled[s.key] = !!(d.call_notes?.[s.key]?.trim());
         });
         this.loading = false;
-        this.cdr.markForCheck();
         setTimeout(() => this.populateEditors(), 50);
       },
-      error: () => { this.loading = false; this.cdr.markForCheck(); },
+      error: () => { this.loading = false; },
+    });
+    this.loadMaterials();
+  }
+
+  loadMaterials() {
+    const id = this.route.snapshot.paramMap.get('id')!;
+    this.deckService.getMaterials(id).subscribe({
+      next: m => { this.materials = m; },
     });
   }
 
   private populateEditors() {
-    SECTIONS.forEach(s => {
+    CALL_NOTE_SECTIONS.forEach(s => {
       const el = document.getElementById('editor-' + s.key);
       if (el) el.innerHTML = this.notes[s.key] || '';
     });
   }
 
+  async onPdfUpload(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    console.log('[PDF upload] file selected:', file.name);
+    this.parsing = true;
+    this.parseSuccess = false;
+    try {
+      const text = await extractTextFromPdf(file);
+      const parsed = parseSectionsFromText(text);
+      console.log('[PDF upload] parsed keys:', Object.keys(parsed));
+      this.parsedCount = 0;
+      for (const [key, content] of Object.entries(parsed)) {
+        if (content.trim()) {
+          this.notes[key] = content.trim();
+          this.filled[key] = true;
+          this.parsedCount++;
+          const el = document.getElementById('editor-' + key);
+          if (el) el.innerHTML = content.trim().replace(/\n/g, '<br>');
+        }
+      }
+      this.parsing = false;
+      this.parseSuccess = true;
+      if (this.deck && this.parsedCount > 0) {
+        this.deckService.saveCallNotes(this.deck.id, this.notes).subscribe();
+      }
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `${this.parsedCount} sections populated`, showConfirmButton: false, timer: 3000, timerProgressBar: true, background: '#16181c', color: '#3dca7e' });
+    } catch (e) {
+      console.error('[PDF upload] error:', e);
+      this.parsing = false;
+      Swal.fire({ toast: true, position: 'top-end', icon: 'error', title: 'Could not parse PDF', showConfirmButton: false, timer: 3000, background: '#16181c', color: '#e05252' });
+    }
+    (event.target as HTMLInputElement).value = '';
+  }
+
   onInput(key: string, event: Event) {
     const el = event.target as HTMLElement;
     this.notes[key] = el.innerHTML;
-    const hasText = !!el.innerText.trim();
-    if (this.filled[key] !== hasText) {
-      this.filled[key] = hasText;
-      this.cdr.markForCheck();
-    }
+    this.filled[key] = !!el.innerText.trim();
   }
 
   onPaste(event: ClipboardEvent) {
@@ -207,51 +312,36 @@ export class CallNotesComponent implements OnInit {
   }
 
   private sanitizePastedHtml(raw: string): string {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(raw, 'text/html');
+    const doc = new DOMParser().parseFromString(raw, 'text/html');
     return this.convertNode(doc.body, 0);
   }
 
   private convertNode(node: Node, depth: number): string {
     if (node.nodeType === Node.TEXT_NODE) {
-      return (node.textContent ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return (node.textContent ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
     const el = node as HTMLElement;
     const tag = el.tagName?.toLowerCase();
-
-    if (tag === 'ul' || tag === 'ol') {
-      return Array.from(el.childNodes).map(c => this.convertNode(c, depth + 1)).join('');
-    }
-
+    if (tag === 'ul' || tag === 'ol') return Array.from(el.childNodes).map(c => this.convertNode(c, depth + 1)).join('');
     if (tag === 'li') {
       const bullet = depth <= 1 ? '\u2022' : '\u25e6';
       const indent = depth <= 1 ? '' : 'padding-left:20px;';
-      let liText = '';
-      let nestedLists = '';
+      let liText = '', nestedLists = '';
       for (const child of Array.from(el.childNodes)) {
-        const childTag = (child as HTMLElement).tagName?.toLowerCase();
-        if (childTag === 'ul' || childTag === 'ol') {
-          nestedLists += this.convertNode(child, depth + 1);
-        } else if (childTag === 'div' || childTag === 'p') {
-          // flatten block children to inline text
-          liText += (child as HTMLElement).innerText ?? (child as HTMLElement).textContent ?? '';
-        } else {
-          liText += this.convertNode(child, depth);
-        }
+        const ct = (child as HTMLElement).tagName?.toLowerCase();
+        if (ct === 'ul' || ct === 'ol') nestedLists += this.convertNode(child, depth + 1);
+        else if (ct === 'div' || ct === 'p') liText += (child as HTMLElement).innerText ?? (child as HTMLElement).textContent ?? '';
+        else liText += this.convertNode(child, depth);
       }
-      const escaped = liText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return `<div style="${indent}">${bullet} ${escaped}</div>${nestedLists}`;
+      const esc = liText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<div style="${indent}">${bullet} ${esc}</div>${nestedLists}`;
     }
-
     const children = Array.from(el.childNodes).map(c => this.convertNode(c, depth)).join('');
-
     if (tag === 'p' || tag === 'div') return `<div>${children || '<br>'}</div>`;
     if (tag === 'br') return '<br>';
     if (tag === 'b' || tag === 'strong') return `<b>${children}</b>`;
     if (tag === 'i' || tag === 'em') return `<i>${children}</i>`;
     if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4') return `<div><b>${children}</b></div>`;
-    if (tag === 'body' || tag === 'span' || tag === 'font') return children;
     return children;
   }
 
@@ -260,35 +350,20 @@ export class CallNotesComponent implements OnInit {
     event.preventDefault();
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
-    const range = sel.getRangeAt(0);
-    let node: Node | null = range.startContainer;
+    let node: Node | null = sel.getRangeAt(0).startContainer;
     while (node) {
-      const parent = node.parentElement;
-      if (parent && parent.contentEditable === 'true') break;
+      if (node.parentElement?.contentEditable === 'true') break;
       node = node.parentNode;
     }
     if (!node) return;
-    const lineEl: HTMLElement = node.nodeType === Node.TEXT_NODE
-      ? (node.parentElement as HTMLElement)
-      : (node as HTMLElement);
+    const lineEl = (node.nodeType === Node.TEXT_NODE ? node.parentElement : node) as HTMLElement;
     const cur = lineEl.innerText ?? '';
-    let next: string;
-    if (cur.startsWith('\u25e6 ')) {
-      next = cur.slice(2);
-      lineEl.style.paddingLeft = '';
-    } else if (cur.startsWith('\u2022 ')) {
-      next = '\u25e6 ' + cur.slice(2);
-      lineEl.style.paddingLeft = '20px';
-    } else {
-      next = '\u2022 ' + cur;
-      lineEl.style.paddingLeft = '';
-    }
-    lineEl.innerText = next;
-    const newRange = document.createRange();
-    newRange.selectNodeContents(lineEl);
-    newRange.collapse(false);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
+    if (cur.startsWith('\u25e6 ')) { lineEl.innerText = cur.slice(2); lineEl.style.paddingLeft = ''; }
+    else if (cur.startsWith('\u2022 ')) { lineEl.innerText = '\u25e6 ' + cur.slice(2); lineEl.style.paddingLeft = '20px'; }
+    else { lineEl.innerText = '\u2022 ' + cur; lineEl.style.paddingLeft = ''; }
+    const r = document.createRange();
+    r.selectNodeContents(lineEl); r.collapse(false);
+    sel.removeAllRanges(); sel.addRange(r);
   }
 
   fmt(event: MouseEvent, cmd: string) {
@@ -297,12 +372,7 @@ export class CallNotesComponent implements OnInit {
       const sel = window.getSelection();
       if (!sel || !sel.rangeCount) return;
       const selected = sel.getRangeAt(0).toString();
-      if (selected) {
-        const bulleted = selected.split('\n').map(l => '\u2022 ' + l).join('\n');
-        document.execCommand('insertText', false, bulleted);
-      } else {
-        document.execCommand('insertText', false, '\u2022 ');
-      }
+      document.execCommand('insertText', false, selected ? selected.split('\n').map(l => '\u2022 ' + l).join('\n') : '\u2022 ');
     } else {
       document.execCommand(cmd, false);
     }
@@ -313,49 +383,34 @@ export class CallNotesComponent implements OnInit {
     const el = document.getElementById('editor-' + key);
     if (el) this.notes[key] = el.innerHTML;
     this.savingKey = key;
-    this.cdr.markForCheck();
     this.deckService.saveCallNotes(this.deck.id, { [key]: this.notes[key] }).subscribe({
       next: () => {
-        this.savingKey = null;
-        this.savedKey = key;
-        this.cdr.markForCheck();
-        setTimeout(() => { if (this.savedKey === key) { this.savedKey = null; this.cdr.markForCheck(); } }, 2500);
+        this.savingKey = null; this.savedKey = key;
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Saved', showConfirmButton: false, timer: 1500, timerProgressBar: true, background: '#16181c', color: '#3dca7e' });
+        setTimeout(() => { if (this.savedKey === key) this.savedKey = null; }, 2500);
       },
-      error: () => { this.savingKey = null; this.cdr.markForCheck(); },
+      error: () => { this.savingKey = null; },
     });
   }
 
-  downloadCallNotesPdf() {
+  onMaterialUpload(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file || !this.deck) return;
+    this.uploadingMaterial = true;
+    this.deckService.uploadMaterial(this.deck.id, file).subscribe({
+      next: m => {
+        this.materials = [m, ...this.materials]; this.uploadingMaterial = false;
+        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'File uploaded', showConfirmButton: false, timer: 2000, background: '#16181c', color: '#3dca7e' });
+      },
+      error: () => { this.uploadingMaterial = false; },
+    });
+    (event.target as HTMLInputElement).value = '';
+  }
+
+  deleteMaterial(id: string) {
     if (!this.deck) return;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = 48;
-    const maxW = pageW - margin * 2;
-    let y = 56;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.text(this.deck.startup_name + ' — Call Notes', margin, y);
-    y += 28;
-
-    for (const section of SECTIONS) {
-      const el = document.getElementById('editor-' + section.key);
-      const text = (el ? el.innerText : this.notes[section.key] ?? '').trim();
-      if (!text) continue;
-      if (y > 760) { doc.addPage(); y = 56; }
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
-      doc.text(section.label.toUpperCase(), margin, y); y += 16;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
-      const lines = doc.splitTextToSize(text, maxW);
-      for (const line of lines) {
-        if (y > 780) { doc.addPage(); y = 56; }
-        doc.text(line, margin, y); y += 15;
-      }
-      y += 14;
-    }
-    doc.save(`${this.deck.startup_name} - Call Notes.pdf`);
+    this.deckService.deleteMaterial(this.deck.id, id).subscribe({
+      next: () => { this.materials = this.materials.filter(m => m.id !== id); },
+    });
   }
 }
-
-
-

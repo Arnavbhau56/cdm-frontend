@@ -22,6 +22,13 @@ export interface Comment {
   created_at: string;
 }
 
+export interface DeckMaterial {
+  id: string;
+  name: string;
+  url: string;
+  created_at: string;
+}
+
 export interface FounderQuestion {
   question: string;
   answer: string;
@@ -89,8 +96,26 @@ export class DeckService {
     );
   }
 
+  getMaterials(deckId: string) {
+    return this.http.get<DeckMaterial[]>(`${this.base}/decks/${deckId}/materials/`);
+  }
+
+  uploadMaterial(deckId: string, file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<DeckMaterial>(`${this.base}/decks/${deckId}/materials/`, form);
+  }
+
+  deleteMaterial(deckId: string, materialId: string) {
+    return this.http.delete(`${this.base}/decks/${deckId}/materials/${materialId}/`);
+  }
+
   saveCallNotes(id: string, call_notes: Record<string, string>) {
     return this.http.patch<{ call_notes: Record<string, string> }>(`${this.base}/decks/${id}/call-notes/`, { call_notes });
+  }
+
+  autoAnswerQuestions(id: string) {
+    return this.http.post<{ founder_questions: FounderQuestion[]; updated: number }>(`${this.base}/decks/${id}/auto-answer/`, {});
   }
 
   saveQuestions(id: string, founder_questions: FounderQuestion[]) {

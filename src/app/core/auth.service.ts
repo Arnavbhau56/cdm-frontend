@@ -1,4 +1,5 @@
 // Auth service: handles login, logout, and JWT token storage in localStorage.
+// logout() only clears storage — navigation is handled by the caller or interceptor.
 
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
@@ -29,6 +30,12 @@ export class AuthService {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_KEY);
     this.router.navigate(['/login']);
+  }
+
+  clearSession() {
+    // Used by the interceptor — clears tokens without triggering navigation
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_KEY);
   }
 
   getToken(): string | null {
