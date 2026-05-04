@@ -25,8 +25,13 @@ export const routes: Routes = [
     canActivate: [authGuard],
   },
   {
-    path: 'setup',
-    loadComponent: () => import('./pages/setup/setup.component').then(m => m.SetupComponent),
+    path: 'deck/:id/questions',
+    loadComponent: () => import('./pages/questions/questions-page.component').then(m => m.QuestionsPageComponent),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'deck/:id/intelligence',
+    loadComponent: () => import('./pages/intelligence/intelligence-page.component').then(m => m.IntelligencePageComponent),
     canActivate: [authGuard],
   },
   { path: '**', redirectTo: 'dashboard' },

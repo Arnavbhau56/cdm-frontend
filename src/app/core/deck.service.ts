@@ -29,6 +29,65 @@ export interface DeckMaterial {
   created_at: string;
 }
 
+export interface DeckNote {
+  id: string;
+  kind: 'general' | 'mis' | 'whatsapp' | 'call';
+  title: string;
+  body: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface InsightRating {
+  dimension: string;
+  score: string;
+  rationale: string;
+}
+
+export interface DealInsight {
+  stage_label: string;
+  stage_rationale: string;
+  ratings: InsightRating[];
+  key_metrics: { label: string; value: string }[];
+  comparables: { name: string; geography: string; note: string }[];
+  overall_score: number;
+  score_rationale: string;
+  recommendation: string;
+  recommendation_rationale: string;
+  one_line_verdict: string;
+}
+
+export interface CompetitorEntry {
+  name: string;
+  description: string;
+  scale: string;
+  relevance: string;
+}
+
+export interface TrendEntry {
+  trend: string;
+  detail: string;
+}
+
+export interface CompetitiveLandscape {
+  market_structure: string;
+  competitors_india: CompetitorEntry[];
+  competitors_global: CompetitorEntry[];
+  trends: TrendEntry[];
+}
+
+export interface IndustryContext {
+  value_chain_position: string;
+  market_size: string;
+  market_timing: string;
+  competitive_landscape: CompetitiveLandscape | string; // string = legacy
+  unit_economics: string;
+  regulatory: string;
+  failure_modes: string;
+  winners_playbook: string;
+  legacy?: string;
+}
+
 export interface FounderQuestion {
   question: string;
   answer: string;
@@ -36,8 +95,11 @@ export interface FounderQuestion {
 
 export interface DeckDetail extends DeckSummary {
   original_filename: string;
+  registered_name: string;
+  sub_sector: string;
+  one_liner: string;
   business_model: string;
-  industry_context: string;
+  industry_context: IndustryContext;
   key_risks: string[];
   founder_questions: FounderQuestion[];
   emailed_questions: number[];
@@ -45,14 +107,7 @@ export interface DeckDetail extends DeckSummary {
   error_message: string;
   pdf_url: string;
   founder_email: string;
-}
-
-export interface FirmPreferences {
-  sectors_focus: string;
-  stage_focus: string;
-  question_style: string;
-  additional_context: string;
-  updated_at?: string;
+  materials: DeckMaterial[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -110,12 +165,32 @@ export class DeckService {
     return this.http.delete(`${this.base}/decks/${deckId}/materials/${materialId}/`);
   }
 
+  getNotes(deckId: string) {
+    return this.http.get<DeckNote[]>(`${this.base}/decks/${deckId}/notes/`);
+  }
+
+  addNote(deckId: string, kind: string, title: string, body: string) {
+    return this.http.post<DeckNote>(`${this.base}/decks/${deckId}/notes/`, { kind, title, body });
+  }
+
+  deleteNote(deckId: string, noteId: string) {
+    return this.http.delete(`${this.base}/decks/${deckId}/notes/${noteId}/`);
+  }
+
+  getInsight(deckId: string) {
+    return this.http.post<DealInsight>(`${this.base}/decks/${deckId}/insight/`, {});
+  }
+
   saveCallNotes(id: string, call_notes: Record<string, string>) {
     return this.http.patch<{ call_notes: Record<string, string> }>(`${this.base}/decks/${id}/call-notes/`, { call_notes });
   }
 
   autoAnswerQuestions(id: string) {
     return this.http.post<{ founder_questions: FounderQuestion[]; updated: number }>(`${this.base}/decks/${id}/auto-answer/`, {});
+  }
+
+  suggestQuestions(id: string, prompt: string) {
+    return this.http.post<{ suggestions: string[] }>(`${this.base}/decks/${id}/suggest-questions/`, { prompt });
   }
 
   saveQuestions(id: string, founder_questions: FounderQuestion[]) {
@@ -126,14 +201,6 @@ export class DeckService {
     return this.http.patch<{ founder_email: string }>(
       `${this.base}/decks/${id}/founder/`, data
     );
-  }
-
-  getPreferences() {
-    return this.http.get<FirmPreferences>(`${this.base}/setup/`);
-  }
-
-  savePreferences(data: FirmPreferences) {
-    return this.http.put<FirmPreferences>(`${this.base}/setup/`, data);
   }
 
   getComments(deckId: string) {

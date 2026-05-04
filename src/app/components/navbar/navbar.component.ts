@@ -17,12 +17,6 @@ import { AuthService } from '../../core/auth.service';
           <span style="font-size:.75rem;color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;">Deck Analyzer</span>
         </a>
         <div style="display:flex;align-items:center;gap:12px;">
-          <a routerLink="/setup" title="Settings"
-            style="color:var(--text-muted);font-size:.75rem;letter-spacing:.04em;text-decoration:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;transition:color .15s,border-color .15s;"
-            onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-muted)'"
-            onmouseout="this.style.color='var(--text-muted)';this.style.borderColor='var(--border)'">
-            Settings
-          </a>
           <button (click)="auth.logout()"
             style="background:none;border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;padding:5px 10px;cursor:pointer;font-family:var(--font-body);transition:color .15s,border-color .15s;"
             onmouseover="this.style.color='var(--text)';this.style.borderColor='var(--text-muted)'"
