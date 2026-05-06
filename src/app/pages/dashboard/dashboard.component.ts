@@ -28,7 +28,7 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
             <p style="font-size:.78rem;color:var(--text-muted);margin-top:2px;">{{ decks.length }} total</p>
           </div>
           <button (click)="showModal = true"
-            style="background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.78rem;font-weight:700;letter-spacing:.04em;padding:9px 16px;cursor:pointer;transition:opacity .15s;"
+            style="background:var(--accent);color:#007EA8;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.88rem;font-weight:700;letter-spacing:.04em;padding:9px 16px;cursor:pointer;transition:opacity .15s;"
             onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
             + Upload Deck
           </button>
@@ -62,7 +62,7 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
           <div *ngIf="selectedIds.size > 0" style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:.78rem;color:var(--text-muted);">{{ selectedIds.size }} selected</span>
             <button (click)="bulkDelete()"
-              style="background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:var(--radius);color:#e05252;font-size:.75rem;padding:5px 12px;cursor:pointer;transition:opacity .15s;">
+              style="background:rgba(255,180,0,.1);border:1px solid rgba(255,180,0,.3);border-radius:var(--radius);color:#ffb400;font-size:.75rem;padding:5px 12px;cursor:pointer;transition:opacity .15s;">
               Delete Selected
             </button>
           </div>
@@ -70,20 +70,20 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
 
         <!-- Table -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
-          <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+          <table style="width:100%;border-collapse:collapse;font-size:.95rem;">
             <thead>
               <tr style="border-bottom:1px solid var(--border);">
                 <th style="padding:12px 16px;width:40px;">
                   <input type="checkbox" [checked]="isAllSelected()" (change)="toggleAll($event)"
                     style="accent-color:var(--accent);width:auto;" />
                 </th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">STARTUP</th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">SECTOR</th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">FOUNDER EMAIL</th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">DATE</th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">ANALYSIS</th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">DECISION</th>
-                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">LATEST NOTE</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">STARTUP</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">SECTOR</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">FOUNDER EMAIL</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">DATE</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">ANALYSIS</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">DECISION</th>
+                <th style="text-align:left;padding:12px 16px;font-family:var(--font-body);font-size:.75rem;letter-spacing:.08em;color:var(--text-muted);font-weight:400;">LATEST NOTE</th>
               </tr>
             </thead>
             <tbody>
@@ -103,7 +103,7 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
 
                 <td style="padding:12px 16px;font-weight:500;">
                   <span
-                    [style.color]="deck.status === 'complete' ? 'var(--accent)' : 'var(--text)'"
+                    [style.color]="deck.status === 'complete' ? 'var(--text)' : 'var(--text-muted)'"
                     [style.cursor]="deck.status === 'complete' ? 'pointer' : 'default'"
                     (click)="openDeck(deck)">
                     {{ deck.startup_name }}
@@ -112,29 +112,29 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
 
                 <td style="padding:12px 16px;">
                   <span *ngIf="deck.sector"
-                    style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid #4f8ef7;border-radius:4px;padding:2px 7px;color:#4f8ef7;">
+                    style="font-size:.78rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--text);">
                     {{ deck.sector }}
                   </span>
                   <span *ngIf="!deck.sector" style="color:var(--text-muted);">—</span>
                 </td>
 
                 <td style="padding:12px 16px;">
-                  <a *ngIf="deck.founder_email" [href]="'mailto:' + deck.founder_email"
-                    style="font-size:.78rem;color:var(--accent);text-decoration:none;"
+                  <a *ngIf="deck.founder_email_1 && deck.founder_email_1 !== 'N/A'" [href]="'mailto:' + deck.founder_email_1"
+                    style="font-size:.88rem;color:var(--text);text-decoration:none;"
                     (click)="$event.stopPropagation()">
-                    {{ deck.founder_email }}
+                    {{ deck.founder_email_1 }}
                   </a>
-                  <span *ngIf="!deck.founder_email" style="color:var(--text-muted);">—</span>
+                  <span *ngIf="!deck.founder_email_1 || deck.founder_email_1 === 'N/A'" style="color:var(--text-muted);">—</span>
                 </td>
 
-                <td style="padding:12px 16px;color:var(--text-muted);font-size:.82rem;">
+                <td style="padding:12px 16px;color:var(--text-muted);font-size:.9rem;">
                   {{ deck.created_at | date:'dd MMM yyyy' }}
                 </td>
 
                 <td style="padding:12px 16px;">
-                  <span style="font-size:.72rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid;border-radius:4px;padding:2px 7px;"
-                    [style.color]="deck.status === 'complete' ? '#3dca7e' : deck.status === 'processing' ? '#f0c040' : deck.status === 'failed' ? '#e05252' : 'var(--text-muted)'"
-                    [style.borderColor]="deck.status === 'complete' ? '#3dca7e' : deck.status === 'processing' ? '#f0c040' : deck.status === 'failed' ? '#e05252' : 'var(--border)'">
+                  <span style="font-size:.78rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid;border-radius:4px;padding:2px 7px;"
+                    [style.color]="deck.status === 'complete' ? 'var(--text)' : deck.status === 'processing' ? 'var(--text-muted)' : deck.status === 'failed' ? 'var(--text-muted)' : 'var(--text-muted)'"
+                    [style.borderColor]="deck.status === 'complete' ? 'var(--border)' : deck.status === 'processing' ? 'var(--border)' : 'var(--border)'">
                     {{ deck.status | titlecase }}
                   </span>
                 </td>
@@ -148,8 +148,8 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
 
                 <td style="padding:12px 16px;max-width:200px;">
                   <ng-container *ngIf="deck.latest_comment; else noComment">
-                    <p style="font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ deck.latest_comment.body }}</p>
-                    <p style="font-size:.72rem;color:var(--text-muted);">{{ deck.latest_comment.author_name }}</p>
+                    <p style="font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ deck.latest_comment.body }}</p>
+                    <p style="font-size:.82rem;color:var(--text-muted);">{{ deck.latest_comment.author_name }}</p>
                   </ng-container>
                   <ng-template #noComment><span style="color:var(--text-muted);">—</span></ng-template>
                 </td>
@@ -170,9 +170,9 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
 
         <ng-container *ngIf="!uploading">
           <app-upload-box (fileSelected)="onFileSelected($event)" />
-          <p *ngIf="uploadError" style="font-size:.78rem;color:#e05252;margin-top:10px;">{{ uploadError }}</p>
+          <p *ngIf="uploadError" style="font-size:.78rem;color:#ffb400;margin-top:10px;">{{ uploadError }}</p>
           <button (click)="submitUpload()" [disabled]="!selectedFile"
-            style="margin-top:16px;width:100%;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.78rem;font-weight:700;letter-spacing:.04em;padding:11px;cursor:pointer;opacity:1;transition:opacity .15s;"
+            style="margin-top:16px;width:100%;background:var(--accent);color:#007EA8;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.88rem;font-weight:700;letter-spacing:.04em;padding:11px;cursor:pointer;opacity:1;transition:opacity .15s;"
             [style.opacity]="!selectedFile ? '0.4' : '1'">
             Analyze Deck
           </button>
@@ -183,7 +183,7 @@ import { CRM_STATUSES } from '../../shared/crm-statuses';
             <div style="width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:12px;"></div>
             <p style="font-size:.82rem;color:var(--text-muted);">{{ uploadMessage }}</p>
           </div>
-          <p *ngIf="uploadError" style="font-size:.78rem;color:#e05252;text-align:center;">{{ uploadError }}</p>
+          <p *ngIf="uploadError" style="font-size:.78rem;color:#ffb400;text-align:center;">{{ uploadError }}</p>
         </ng-container>
       </div>
     </div>

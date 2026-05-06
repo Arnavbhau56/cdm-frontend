@@ -10,7 +10,7 @@ export interface DeckSummary {
   sector: string;
   status: string;
   crm_status: string;
-  founder_email: string;
+  founder_email_1: string;
   created_at: string;
   latest_comment: { body: string; author_name: string } | null;
 }
@@ -35,6 +35,13 @@ export interface DeckNote {
   title: string;
   body: string;
   created_by: string;
+  created_at: string;
+}
+
+export interface DeckNoteSummary {
+  id: string;
+  kind: string;
+  title: string;
   created_at: string;
 }
 
@@ -91,11 +98,13 @@ export interface IndustryContext {
 export interface FounderQuestion {
   question: string;
   answer: string;
+  sector?: string;
 }
 
 export interface DeckDetail extends DeckSummary {
   original_filename: string;
   registered_name: string;
+  website: string;
   sub_sector: string;
   one_liner: string;
   business_model: string;
@@ -104,10 +113,22 @@ export interface DeckDetail extends DeckSummary {
   founder_questions: FounderQuestion[];
   emailed_questions: number[];
   call_notes: Record<string, string>;
+  call_notes_updated_at: string | null;
   error_message: string;
   pdf_url: string;
-  founder_email: string;
+  founder_email_1: string;
+  founder_email_2: string;
+  founder_email_3: string;
   materials: DeckMaterial[];
+  notes_list: DeckNoteSummary[];
+}
+
+export interface Prompt {
+  id: number;
+  key: string;
+  title: string;
+  body: string;
+  updated_at: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -177,12 +198,16 @@ export class DeckService {
     return this.http.delete(`${this.base}/decks/${deckId}/notes/${noteId}/`);
   }
 
+  getCachedInsight(deckId: string) {
+    return this.http.get<DealInsight>(`${this.base}/decks/${deckId}/insight/`);
+  }
+
   getInsight(deckId: string) {
     return this.http.post<DealInsight>(`${this.base}/decks/${deckId}/insight/`, {});
   }
 
   saveCallNotes(id: string, call_notes: Record<string, string>) {
-    return this.http.patch<{ call_notes: Record<string, string> }>(`${this.base}/decks/${id}/call-notes/`, { call_notes });
+    return this.http.patch<{ call_notes: Record<string, string>; call_notes_updated_at: string; created_at: string }>(`${this.base}/decks/${id}/call-notes/`, { call_notes });
   }
 
   autoAnswerQuestions(id: string) {
@@ -197,8 +222,8 @@ export class DeckService {
     return this.http.patch<{ founder_questions: FounderQuestion[] }>(`${this.base}/decks/${id}/questions/`, { founder_questions });
   }
 
-  updateFounderContact(id: string, data: { founder_email: string }) {
-    return this.http.patch<{ founder_email: string }>(
+  updateFounderContact(id: string, data: { founder_email_1: string; founder_email_2: string; founder_email_3: string }) {
+    return this.http.patch<{ founder_email_1: string; founder_email_2: string; founder_email_3: string }>(
       `${this.base}/decks/${id}/founder/`, data
     );
   }
@@ -213,5 +238,17 @@ export class DeckService {
 
   deleteComment(deckId: string, commentId: string) {
     return this.http.delete(`${this.base}/decks/${deckId}/comments/${commentId}/`);
+  }
+
+  getPrompts() {
+    return this.http.get<Prompt[]>(`${this.base}/setup/prompts/`);
+  }
+
+  updatePrompt(id: number, body: string) {
+    return this.http.put<Prompt>(`${this.base}/setup/prompts/${id}/`, { body });
+  }
+
+  sendCustomEmail(deckId: string, payload: { recipients: string[]; body: string; startup_name: string }) {
+    return this.http.post<{ message: string }>(`${this.base}/decks/${deckId}/custom-email/`, payload);
   }
 }

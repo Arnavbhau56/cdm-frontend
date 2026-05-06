@@ -1,5 +1,5 @@
-import { Component, Input, OnChanges } from '@angular/core';
-import { NgIf, NgFor } from '@angular/common';
+import { Component, Input, OnChanges, Output, EventEmitter } from '@angular/core';
+import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { DeckService } from '../../../core/deck.service';
@@ -9,7 +9,7 @@ import { extractTextFromPdf, parseSectionsFromText } from '../../../shared/pdf-p
 @Component({
   selector: 'app-call-notes-editor',
   standalone: true,
-  imports: [NgIf, NgFor, FormsModule],
+  imports: [NgIf, NgFor, FormsModule, DatePipe],
   styles: [`
     .editor { min-height:80px;width:100%;box-sizing:border-box;font-size:.85rem;line-height:1.7;font-family:var(--font-body);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:10px 12px;outline:none;word-break:break-word; }
     .editor:focus { border-color:var(--accent); }
@@ -23,6 +23,18 @@ import { extractTextFromPdf, parseSectionsFromText } from '../../../shared/pdf-p
     .paste-textarea:focus { outline:none;border-color:var(--accent); }
   `],
   template: `
+    <!-- Timestamps row -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <span style="font-size:.6rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;">Deck Created</span>
+        <span style="font-size:.82rem;color:var(--text);font-weight:500;">{{ deckCreatedAt ? (deckCreatedAt | date:'dd MMM yyyy, h:mm a') : '\u2014' }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <span style="font-size:.6rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;">Call Notes Last Updated</span>
+        <span style="font-size:.82rem;color:var(--text);font-weight:500;">{{ liveUpdatedAt ? (liveUpdatedAt | date:'dd MMM yyyy, h:mm a') : '\u2014' }}</span>
+      </div>
+    </div>
+
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px;">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
@@ -97,12 +109,16 @@ import { extractTextFromPdf, parseSectionsFromText } from '../../../shared/pdf-p
 export class CallNotesEditorComponent implements OnChanges {
   @Input() deckId = '';
   @Input() callNotes: Record<string, string> = {};
+  @Input() deckCreatedAt: string | null = null;
+  @Input() callNotesUpdatedAt: string | null = null;
+  @Output() updatedAtChanged = new EventEmitter<string>();
 
   sections = CALL_NOTE_SECTIONS;
   notes: Record<string, string> = {};
   filled: Record<string, boolean> = {};
   savingKey: string | null = null;
   savedKey: string | null = null;
+  liveUpdatedAt: string | null = null;
   parsing = false;
   parseSuccess = false;
   parsedCount = 0;
@@ -116,6 +132,7 @@ export class CallNotesEditorComponent implements OnChanges {
       this.notes[s.key] = this.callNotes?.[s.key] ?? '';
       this.filled[s.key] = !!(this.callNotes?.[s.key]?.trim());
     });
+    this.liveUpdatedAt = this.callNotesUpdatedAt ?? null;
     setTimeout(() => CALL_NOTE_SECTIONS.forEach(s => {
       const el = document.getElementById('editor-' + s.key);
       if (el) el.innerHTML = this.notes[s.key] || '';
@@ -141,7 +158,11 @@ export class CallNotesEditorComponent implements OnChanges {
     }
     this.showPasteModal = false;
     this.parseSuccess = true;
-    if (this.parsedCount > 0) this.deckService.saveCallNotes(this.deckId, this.notes).subscribe();
+    if (this.parsedCount > 0) {
+      this.deckService.saveCallNotes(this.deckId, this.notes).subscribe({
+        next: res => { this.liveUpdatedAt = res.call_notes_updated_at; },
+      });
+    }
     Swal.fire({ toast: true, position: 'top-end', icon: this.parsedCount > 0 ? 'success' : 'warning',
       title: this.parsedCount > 0 ? `${this.parsedCount} sections populated` : 'No sections detected — check headings match section names',
       showConfirmButton: false, timer: 3500, background: '#16181c', color: this.parsedCount > 0 ? '#3dca7e' : '#f0a500' });
@@ -162,7 +183,11 @@ export class CallNotesEditorComponent implements OnChanges {
         }
       }
       this.parsing = false; this.parseSuccess = true;
-      if (this.parsedCount > 0) this.deckService.saveCallNotes(this.deckId, this.notes).subscribe();
+      if (this.parsedCount > 0) {
+        this.deckService.saveCallNotes(this.deckId, this.notes).subscribe({
+          next: res => { this.liveUpdatedAt = res.call_notes_updated_at; },
+        });
+      }
       Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `${this.parsedCount} sections populated`, showConfirmButton: false, timer: 3000, background: '#16181c', color: '#3dca7e' });
     } catch {
       this.parsing = false;
@@ -183,8 +208,9 @@ export class CallNotesEditorComponent implements OnChanges {
     if (el) this.notes[key] = el.innerHTML;
     this.savingKey = key;
     this.deckService.saveCallNotes(this.deckId, { [key]: this.notes[key] }).subscribe({
-      next: () => {
+      next: res => {
         this.savingKey = null; this.savedKey = key;
+        this.liveUpdatedAt = res.call_notes_updated_at;
         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Saved', showConfirmButton: false, timer: 1500, background: '#16181c', color: '#3dca7e' });
         setTimeout(() => { if (this.savedKey === key) this.savedKey = null; }, 2500);
       },

@@ -34,5 +34,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/intelligence/intelligence-page.component').then(m => m.IntelligencePageComponent),
     canActivate: [authGuard],
   },
+  {
+    path: 'prompts',
+    loadComponent: () => import('./pages/prompts/prompts.component').then(m => m.PromptsComponent),
+    canActivate: [authGuard],
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

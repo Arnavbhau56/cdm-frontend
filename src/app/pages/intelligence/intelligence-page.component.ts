@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { NgIf, NgFor } from '@angular/common';
+import { NgIf, NgFor, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
-import { DeckService, DeckDetail, DealInsight } from '../../core/deck.service';
+import { DeckHeaderComponent } from '../deck-detail/components/deck-header.component';
+import { DeckService, DeckDetail, DealInsight, Comment } from '../../core/deck.service';
 
 const SCORE_STYLE: Record<string, string> = {
   'Strong':   'color:#3dca7e;border-color:rgba(61,202,126,.4);background:rgba(61,202,126,.08)',
@@ -34,7 +35,7 @@ const REC_STYLE: Record<string, string> = {
 @Component({
   selector: 'app-intelligence-page',
   standalone: true,
-  imports: [NgIf, NgFor, RouterLink, FormsModule, NavbarComponent, LoaderComponent],
+  imports: [NgIf, NgFor, DatePipe, RouterLink, FormsModule, NavbarComponent, LoaderComponent, DeckHeaderComponent],
   template: `
     <div style="min-height:100vh;background:var(--bg);">
       <app-navbar />
@@ -42,38 +43,30 @@ const REC_STYLE: Record<string, string> = {
 
       <div *ngIf="!deckLoading && deck" style="max-width:88vw;margin:0 auto;padding:36px 24px 64px;">
 
-        <!-- Header -->
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
-          <div>
-            <h1 style="font-size:1.1rem;font-weight:700;letter-spacing:.04em;">{{ deck.startup_name }}</h1>
-            <span *ngIf="deck.sector"
-              style="display:inline-block;margin-top:6px;font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid #4f8ef7;border-radius:4px;padding:2px 7px;color:#4f8ef7;">
-              {{ deck.sector }}
-            </span>
-          </div>
-          <a *ngIf="deck.pdf_url" [href]="deck.pdf_url" target="_blank" rel="noopener noreferrer"
-            style="font-size:.72rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 14px;text-decoration:none;">
-            ↓ Download Deck
-          </a>
-        </div>
+        <app-deck-header [deck]="deck" active="intelligence" (deckChanged)="deck = $event" />
 
-        <!-- 4-tab nav -->
-        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content;margin-bottom:28px;">
-          <a [routerLink]="['/deck', deck.id]"
-            style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);border-right:1px solid var(--border);">
-            Deck Analysis
-          </a>
-          <a [routerLink]="['/deck', deck.id, 'call-notes']"
-            style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);border-right:1px solid var(--border);">
-            Call Notes
-          </a>
-          <a [routerLink]="['/deck', deck.id, 'questions']"
-            style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);border-right:1px solid var(--border);">
-            Questions
-          </a>
-          <span style="font-size:.78rem;font-weight:600;padding:8px 18px;color:var(--accent);background:var(--accent-dim);cursor:default;">
-            Intelligence
-          </span>
+        <!-- Team Notes -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px 24px;margin-bottom:24px;">
+          <span style="font-size:.65rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;display:block;margin-bottom:12px;">Team Notes</span>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+            <p *ngIf="comments.length === 0" style="font-size:.82rem;color:var(--text-muted);">No notes yet.</p>
+            <div *ngFor="let c of comments"
+              style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+              <div style="flex:1;min-width:0;">
+                <p style="font-size:.85rem;color:var(--text);">{{ c.body }}</p>
+                <p style="font-size:.72rem;color:var(--text-muted);margin-top:4px;">{{ c.author_name }} · {{ c.created_at | date:'dd MMM yyyy, h:mm a' }}</p>
+              </div>
+              <button (click)="deleteComment(c.id)" style="background:none;border:none;color:var(--text-muted);font-size:1rem;cursor:pointer;padding:2px 5px;border-radius:4px;line-height:1;flex-shrink:0;">×</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <textarea [(ngModel)]="newNote" placeholder="Add a note for the team…" rows="2" style="flex:1;resize:none;"></textarea>
+            <button (click)="addComment()" [disabled]="!newNote.trim() || savingNote"
+              style="align-self:flex-end;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-size:.72rem;font-weight:700;padding:9px 14px;cursor:pointer;white-space:nowrap;"
+              [style.opacity]="!newNote.trim() || savingNote ? '0.4' : '1'">
+              {{ savingNote ? '…' : '+ Add Note' }}
+            </button>
+          </div>
         </div>
 
         <!-- Generate button -->
@@ -140,14 +133,24 @@ const REC_STYLE: Record<string, string> = {
               <span [style]="stageStyle()" style="font-size:.82rem;font-weight:700;border:1px solid;border-radius:6px;padding:5px 14px;display:inline-block;margin-bottom:10px;">
                 {{ insight.stage_label }}
               </span>
-              <p style="font-size:.82rem;color:var(--text-muted);line-height:1.6;">{{ insight.stage_rationale }}</p>
+              <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;">
+                <li *ngFor="let point of parsePoints(insight.stage_rationale)" style="display:flex;gap:8px;font-size:.82rem;color:var(--text-muted);line-height:1.6;">
+                  <span style="color:var(--accent);flex-shrink:0;margin-top:2px;">•</span>
+                  <span>{{ point }}</span>
+                </li>
+              </ul>
             </div>
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;">
               <p style="font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;">Recommendation</p>
               <span [style]="recStyle()" style="font-size:.82rem;font-weight:700;border:1px solid;border-radius:6px;padding:5px 14px;display:inline-block;margin-bottom:10px;">
                 {{ insight.recommendation }}
               </span>
-              <p style="font-size:.82rem;color:var(--text-muted);line-height:1.6;">{{ insight.recommendation_rationale }}</p>
+              <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;">
+                <li *ngFor="let point of parsePoints(insight.recommendation_rationale)" style="display:flex;gap:8px;font-size:.82rem;color:var(--text-muted);line-height:1.6;">
+                  <span style="color:var(--accent);flex-shrink:0;margin-top:2px;">•</span>
+                  <span>{{ point }}</span>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -161,7 +164,12 @@ const REC_STYLE: Record<string, string> = {
                   <span style="font-size:.75rem;font-weight:700;color:var(--text);">{{ r.dimension }}</span>
                   <span [style]="dimScoreStyle(r.score)" style="font-size:.65rem;font-weight:700;border:1px solid;border-radius:4px;padding:2px 8px;">{{ r.score }}</span>
                 </div>
-                <p style="font-size:.8rem;color:var(--text-muted);line-height:1.6;">{{ r.rationale }}</p>
+                <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px;">
+                  <li *ngFor="let point of parsePoints(r.rationale)" style="display:flex;gap:8px;font-size:.8rem;color:var(--text-muted);line-height:1.6;">
+                    <span style="color:var(--accent);flex-shrink:0;margin-top:2px;">•</span>
+                    <span>{{ point }}</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -207,13 +215,30 @@ export class IntelligencePageComponent implements OnInit {
   editingScore = false;
   editScoreValue = 0;
   displayScore = 0;
+  comments: Comment[] = [];
+  newNote = '';
+  savingNote = false;
 
   constructor(private route: ActivatedRoute, private deckService: DeckService) {}
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.deckService.getDeck(id).subscribe({
-      next: d => { this.deck = d; this.deckLoading = false; },
+      next: d => {
+        this.deck = d;
+        this.deckLoading = false;
+        this.deckService.getComments(id).subscribe({ next: c => (this.comments = c) });
+        this.deckService.getCachedInsight(id).subscribe({
+          next: res => {
+            if (res && res.overall_score !== undefined) {
+              this.insight = res;
+              this.displayScore = res.overall_score ?? 0;
+              this.editScoreValue = this.displayScore;
+            }
+          },
+          error: () => {},
+        });
+      },
       error: () => { this.deckLoading = false; },
     });
   }
@@ -232,6 +257,22 @@ export class IntelligencePageComponent implements OnInit {
     });
   }
 
+  addComment() {
+    if (!this.newNote.trim() || !this.deck) return;
+    this.savingNote = true;
+    this.deckService.addComment(this.deck.id, this.newNote.trim()).subscribe({
+      next: c => { this.comments = [...this.comments, c]; this.newNote = ''; this.savingNote = false; },
+      error: () => (this.savingNote = false),
+    });
+  }
+
+  deleteComment(id: string) {
+    if (!this.deck) return;
+    this.deckService.deleteComment(this.deck.id, id).subscribe({
+      next: () => (this.comments = this.comments.filter(c => c.id !== id)),
+    });
+  }
+
   startScoreEdit() { this.editScoreValue = this.displayScore; this.editingScore = true; }
   saveScoreEdit() { this.displayScore = Math.min(100, Math.max(0, this.editScoreValue)); this.editingScore = false; }
   cancelScoreEdit() { this.editScoreValue = this.displayScore; this.editingScore = false; }
@@ -246,4 +287,11 @@ export class IntelligencePageComponent implements OnInit {
   stageStyle() { return STAGE_STYLE[this.insight?.stage_label ?? ''] ?? 'color:var(--text-muted);border-color:var(--border)'; }
   recStyle() { return REC_STYLE[this.insight?.recommendation ?? ''] ?? 'color:var(--text-muted);border-color:var(--border);background:var(--surface-2)'; }
   dimScoreStyle(score: string) { return SCORE_STYLE[score] ?? SCORE_STYLE['Unclear']; }
+
+  parsePoints(text: string): string[] {
+    if (!text) return [];
+    // Split by sentence endings (. ! ?) followed by space or end of string
+    const sentences = text.split(/(?<=[.!?])\s+/).filter(s => s.trim());
+    return sentences;
+  }
 }

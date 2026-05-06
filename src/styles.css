@@ -1,24 +1,30 @@
 /* Global styles: dark theme with Poppins font. */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sora:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --bg:         #0e0f11;
-  --surface:    #16181c;
-  --surface-2:  #1e2128;
-  --border:     #2a2d35;
-  --text:       #e8eaf0;
-  --text-muted: #7a7f8e;
-  --accent:     #f0c040;
-  --accent-dim: rgba(240,192,64,0.12);
+  --bg:         #007EA8;
+  --surface:    #006a8e;
+  --surface-2:  #005a78;
+  --border:     rgba(255,255,255,0.15);
+  --text:       #ffffff;
+  --text-muted: rgba(255,255,255,0.72);
+  --accent:     #ffffff;
+  --accent-dim: rgba(255,255,255,0.15);
   --radius:     8px;
-  --font-body:  'Poppins', sans-serif;
+  --font-body:  'Inter', sans-serif;
+  --font-heading: 'Sora', sans-serif;
 }
 
-html { font-size: 15px; }
+html { font-size: 17px; }
+
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.6rem; }
+h3 { font-size: 1.3rem; }
 
 body {
   background: var(--bg);
@@ -29,6 +35,13 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Thin blue-white scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.5); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.7); }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.5) rgba(255,255,255,0.1); }
 
 input, select, textarea {
   background: var(--surface-2);

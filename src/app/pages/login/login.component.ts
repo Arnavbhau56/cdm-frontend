@@ -14,12 +14,8 @@ import { AuthService } from '../../core/auth.service';
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;">
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:20px;">
 
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="color:var(--accent);font-size:1.4rem;">◈</span>
-          <div>
-            <div style="font-family:var(--font-body);font-size:.95rem;font-weight:700;letter-spacing:.04em;">CDM Capital</div>
-            <div style="font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;">Deck Analyzer</div>
-          </div>
+        <div style="display:flex;justify-content:center;">
+          <img src="assets/logo.png" alt="CDM Capital" style="height:48px;object-fit:contain;" />
         </div>
 
         <form (ngSubmit)="submit()" #f="ngForm" style="display:flex;flex-direction:column;gap:14px;">
@@ -35,7 +31,7 @@ import { AuthService } from '../../core/auth.service';
           <p *ngIf="error" style="font-size:.78rem;color:#e05252;">{{ error }}</p>
 
           <button type="submit" [disabled]="loading"
-            style="background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.82rem;font-weight:700;letter-spacing:.04em;padding:11px 18px;cursor:pointer;opacity:1;transition:opacity .15s;"
+            style="background:var(--accent);color:#007EA8;border:none;border-radius:var(--radius);font-family:var(--font-body);font-size:.82rem;font-weight:700;letter-spacing:.04em;padding:11px 18px;cursor:pointer;opacity:1;transition:opacity .15s;"
             [style.opacity]="loading ? '0.5' : '1'">
             {{ loading ? 'Signing in…' : 'Sign In' }}
           </button>

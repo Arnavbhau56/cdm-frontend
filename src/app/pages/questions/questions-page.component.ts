@@ -4,27 +4,19 @@ import { NgIf, NgFor } from '@angular/common';
 import { NavbarComponent } from '../../components/navbar/navbar.component';
 import { LoaderComponent } from '../../components/loader/loader.component';
 import { FounderQuestionsComponent } from '../deck-detail/components/founder-questions.component';
+import { DeckHeaderComponent } from '../deck-detail/components/deck-header.component';
 import { DeckService, DeckDetail, FounderQuestion } from '../../core/deck.service';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
 
-const SECTOR_KEYWORDS: { label: string; keywords: string[] }[] = [
-  { label: 'Business Model', keywords: ['revenue', 'monetis', 'business model', 'pricing', 'unit economics', 'margin', 'ltv', 'cac'] },
-  { label: 'Market & GTM', keywords: ['market', 'gtm', 'go-to-market', 'channel', 'distribution', 'customer acquisition', 'tam', 'sam', 'som'] },
-  { label: 'Product & Technology', keywords: ['product', 'tech', 'platform', 'feature', 'roadmap', 'ip', 'patent', 'moat', 'differenti'] },
-  { label: 'Traction & Growth', keywords: ['traction', 'growth', 'mrr', 'arr', 'churn', 'retention', 'user', 'customer', 'metric'] },
-  { label: 'Team & Founders', keywords: ['team', 'founder', 'hire', 'talent', 'experience', 'background', 'co-founder'] },
-  { label: 'Financials & Fundraise', keywords: ['fund', 'raise', 'runway', 'burn', 'capital', 'valuation', 'financial', 'cash', 'invest'] },
-  { label: 'Legal & Compliance', keywords: ['legal', 'regulat', 'compliance', 'license', 'contract', 'liability', 'risk'] },
-];
-
-function categorise(q: string): string {
-  const lower = q.toLowerCase();
-  for (const { label, keywords } of SECTOR_KEYWORDS) {
-    if (keywords.some(k => lower.includes(k))) return label;
-  }
-  return 'Other';
-}
+const SECTORS = [
+  'Problem and Product',
+  'Business Model',
+  'Market and GTM',
+  'Financials and Traction',
+  'Growth and Technology',
+  'Legal and Compliance',
+] as const;
 
 interface SectorGroup {
   label: string;
@@ -35,7 +27,7 @@ interface SectorGroup {
 @Component({
   selector: 'app-questions-page',
   standalone: true,
-  imports: [NgIf, NgFor, RouterLink, FormsModule, NavbarComponent, LoaderComponent, FounderQuestionsComponent],
+  imports: [NgIf, NgFor, RouterLink, FormsModule, NavbarComponent, LoaderComponent, FounderQuestionsComponent, DeckHeaderComponent],
   template: `
     <div style="min-height:100vh;background:var(--bg);">
       <app-navbar />
@@ -43,39 +35,7 @@ interface SectorGroup {
 
       <div *ngIf="!loading && deck" style="max-width:88vw;margin:0 auto;padding:36px 24px 64px;">
 
-        <!-- Header -->
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;">
-          <div>
-            <h1 style="font-size:1.1rem;font-weight:700;letter-spacing:.04em;">{{ deck.startup_name }}</h1>
-            <span *ngIf="deck.sector"
-              style="display:inline-block;margin-top:6px;font-size:.7rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border:1px solid #4f8ef7;border-radius:4px;padding:2px 7px;color:#4f8ef7;">
-              {{ deck.sector }}
-            </span>
-          </div>
-          <a *ngIf="deck.pdf_url" [href]="deck.pdf_url" target="_blank" rel="noopener noreferrer"
-            style="font-size:.72rem;font-weight:700;color:var(--accent);background:var(--accent-dim);border:1px solid var(--accent);border-radius:var(--radius);padding:7px 14px;text-decoration:none;">
-            ↓ Download Deck
-          </a>
-        </div>
-
-        <!-- Top tab nav -->
-        <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;width:fit-content;margin-bottom:28px;">
-          <a [routerLink]="['/deck', deck.id]"
-            style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);border-right:1px solid var(--border);">
-            Deck Analysis
-          </a>
-          <a [routerLink]="['/deck', deck.id, 'call-notes']"
-            style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);border-right:1px solid var(--border);">
-            Call Notes
-          </a>
-          <span style="font-size:.78rem;font-weight:600;padding:8px 18px;color:var(--accent);background:var(--accent-dim);cursor:default;border-right:1px solid var(--border);">
-            Questions
-          </span>
-          <a [routerLink]="['/deck', deck.id, 'intelligence']"
-            style="font-size:.78rem;font-weight:500;padding:8px 18px;text-decoration:none;color:var(--text-muted);background:var(--surface);">
-            Intelligence
-          </a>
-        </div>
+        <app-deck-header [deck]="deck" active="questions" [questions]="questions" (deckChanged)="deck = $event" />
 
         <!-- Stats row -->
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin-bottom:28px;display:flex;gap:28px;flex-wrap:wrap;">
@@ -93,58 +53,46 @@ interface SectorGroup {
           </div>
         </div>
 
-        <!-- Sector groups -->
-        <div *ngFor="let group of groups" style="margin-bottom:28px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-            <span style="font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);">{{ group.label }}</span>
-            <span style="font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface-2);">{{ group.questions.length }}</span>
-          </div>
-          <app-founder-questions
-            [deckId]="deck.id"
-            [questions]="group.flat"
-            [emailedIndices]="groupEmailedIndices(group)"
-            [hideActions]="true"
-            (questionsChanged)="onGroupChanged(group, $event)"
-            (emailModal)="openEmailModal()">
-          </app-founder-questions>
-        </div>
-
-        <!-- Single action bar at the bottom -->
-        <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap;align-items:center;padding-top:24px;border-top:1px solid var(--border);">
+        <!-- 4 Action buttons at the TOP -->
+        <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;align-items:center;padding:18px 22px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);">
           <button (click)="addingGlobal = true"
-            style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;font-weight:600;padding:7px 14px;cursor:pointer;">
+            style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;font-weight:600;padding:7px 14px;cursor:pointer;">
             + Add Question
           </button>
           <button (click)="openEmailModal()"
             style="background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-size:.75rem;font-weight:700;padding:7px 16px;cursor:pointer;">
-            Email to Founder
+            Send to Founder
           </button>
           <button (click)="autoAnswer()" [disabled]="autoAnswering"
-            style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;font-weight:600;padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;"
+            style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;font-weight:600;padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:6px;"
             [style.opacity]="autoAnswering ? '0.5' : '1'">
             <span>{{ autoAnswering ? 'Finding answers…' : '✦ Try to find answers' }}</span>
           </button>
           <button (click)="suggestOpen = true"
-            style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;font-weight:600;padding:7px 14px;cursor:pointer;">
+            style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;font-weight:600;padding:7px 14px;cursor:pointer;">
             ✦ Suggest Questions
           </button>
         </div>
 
         <!-- Add question inline -->
         <div *ngIf="addingGlobal"
-          style="margin-top:12px;background:var(--surface-2);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+          style="margin-bottom:24px;background:var(--surface-2);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
           <input [(ngModel)]="newQuestionText" placeholder="Enter new question…" style="font-size:.85rem;" />
+          <select [(ngModel)]="newQuestionSector" style="font-size:.85rem;padding:8px;">
+            <option value="">Select sector…</option>
+            <option *ngFor="let s of SECTORS" [value]="s">{{ s }}</option>
+          </select>
           <div style="display:flex;gap:8px;">
             <button (click)="confirmAddGlobal()"
               style="background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-size:.75rem;font-weight:700;padding:6px 14px;cursor:pointer;">Add</button>
-            <button (click)="addingGlobal = false; newQuestionText = ''"
+            <button (click)="addingGlobal = false; newQuestionText = ''; newQuestionSector = ''"
               style="background:none;border:1px solid var(--border);border-radius:var(--radius);color:var(--text-muted);font-size:.75rem;padding:6px 14px;cursor:pointer;">Cancel</button>
           </div>
         </div>
 
         <!-- Suggest Questions panel -->
         <div *ngIf="suggestOpen"
-          style="margin-top:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;">
+          style="margin-bottom:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
             <span style="font-size:.65rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;">AI Question Suggestions</span>
             <button (click)="closeSuggest()" style="background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;line-height:1;">×</button>
@@ -192,6 +140,23 @@ interface SectorGroup {
           </div>
         </div>
 
+        <!-- Sector groups -->
+        <div *ngFor="let group of groups" style="margin-bottom:28px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+            <span style="font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text);">{{ group.label }}</span>
+            <span style="font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:var(--text-muted);background:var(--surface-2);">{{ group.questions.length }}</span>
+          </div>
+          <app-founder-questions
+            [deckId]="deck.id"
+            [questions]="group.flat"
+            [emailedIndices]="groupEmailedIndices(group)"
+            [hideActions]="true"
+            [hideSectorHeaders]="true"
+            (questionsChanged)="onGroupChanged(group, $event)"
+            (emailModal)="openEmailModal()">
+          </app-founder-questions>
+        </div>
+
       </div>
 
       <div *ngIf="!loading && !deck" style="text-align:center;padding:80px 20px;color:var(--text-muted);">Deck not found.</div>
@@ -199,12 +164,25 @@ interface SectorGroup {
 
     <!-- Email Modal -->
     <div *ngIf="showEmailModal" style="position:fixed;inset:0;background:rgba(14,15,17,.85);display:flex;align-items:center;justify-content:center;z-index:40;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:500px;margin:0 16px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:520px;margin:0 16px;max-height:90vh;overflow-y:auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <span style="font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;">Email Founder Questions</span>
+          <span style="font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;">Send Questions to Founder</span>
           <button (click)="closeEmailModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;line-height:1;">×</button>
         </div>
-        <input type="email" [(ngModel)]="recipientEmail" placeholder="recipient@example.com" style="margin-bottom:16px;" />
+
+        <!-- Founder recipient selection -->
+        <p style="font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Send To</p>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;">
+          <ng-container *ngFor="let email of founderEmails()">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.85rem;color:var(--text);">
+              <input type="checkbox" [checked]="selectedRecipients.has(email)" (change)="toggleRecipient(email)"
+                style="accent-color:var(--accent);width:auto;flex-shrink:0;" />
+              {{ email }}
+            </label>
+          </ng-container>
+          <p *ngIf="founderEmails().length === 0" style="font-size:.82rem;color:var(--text-muted);font-style:italic;">No founder emails saved. Add them in the deck header.</p>
+        </div>
+
         <p style="font-size:.65rem;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Select Questions</p>
         <div style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto;margin-bottom:12px;padding-right:4px;">
           <label *ngFor="let q of questions; let i = index"
@@ -212,7 +190,7 @@ interface SectorGroup {
             <input type="checkbox" [checked]="selectedIndices.has(i)" (change)="toggleIndex(i)"
               style="margin-top:3px;accent-color:var(--accent);width:auto;flex-shrink:0;" />
             <span>{{ i + 1 }}. {{ q.question }}
-              <span *ngIf="deck && deck.emailed_questions.includes(i)" style="margin-left:6px;font-size:.68rem;color:#3dca7e;">(emailed before)</span>
+              <span *ngIf="deck && deck.emailed_questions.includes(i)" style="margin-left:6px;font-size:.75rem;color:var(--text-muted);">(emailed before)</span>
             </span>
           </label>
         </div>
@@ -221,12 +199,12 @@ interface SectorGroup {
           <span style="color:var(--border);">|</span>
           <button (click)="clearSelection()" style="background:none;border:none;font-size:.75rem;color:var(--text-muted);cursor:pointer;">Clear</button>
         </div>
-        <p *ngIf="emailError" style="font-size:.78rem;color:#e05252;margin-bottom:10px;">{{ emailError }}</p>
-        <p *ngIf="emailSuccess" style="font-size:.78rem;color:#3dca7e;margin-bottom:10px;">✓ Email sent successfully!</p>
-        <button (click)="sendEmail()" [disabled]="sendingEmail || !recipientEmail || selectedIndices.size === 0"
-          style="width:100%;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-size:.78rem;font-weight:700;padding:11px;cursor:pointer;"
-          [style.opacity]="sendingEmail || !recipientEmail || selectedIndices.size === 0 ? '0.4' : '1'">
-          {{ sendingEmail ? 'Sending…' : 'Send ' + selectedIndices.size + ' Question' + (selectedIndices.size === 1 ? '' : 's') }}
+        <p *ngIf="emailError" style="font-size:.85rem;color:#e05252;margin-bottom:10px;">{{ emailError }}</p>
+        <p *ngIf="emailSuccess" style="font-size:.85rem;color:#3dca7e;margin-bottom:10px;">✓ Email sent successfully!</p>
+        <button (click)="sendEmail()" [disabled]="sendingEmail || selectedRecipients.size === 0 || selectedIndices.size === 0"
+          style="width:100%;background:var(--accent);color:#0e0f11;border:none;border-radius:var(--radius);font-size:.88rem;font-weight:700;padding:11px;cursor:pointer;"
+          [style.opacity]="sendingEmail || selectedRecipients.size === 0 || selectedIndices.size === 0 ? '0.4' : '1'">
+          {{ sendingEmail ? 'Sending…' : 'Send ' + selectedIndices.size + ' Question' + (selectedIndices.size === 1 ? '' : 's') + ' to ' + selectedRecipients.size + ' Recipient' + (selectedRecipients.size === 1 ? '' : 's') }}
         </button>
       </div>
     </div>
@@ -241,14 +219,17 @@ export class QuestionsPageComponent implements OnInit {
 
   addingGlobal = false;
   newQuestionText = '';
+  newQuestionSector = '';
   autoAnswering = false;
   suggestOpen = false;
   suggestPrompt = '';
   suggesting = false;
-  suggestions: { text: string; decided: boolean; accepted: boolean }[] = [];
+  suggestions: { text: string; sector: string; decided: boolean; accepted: boolean }[] = [];
+
+  readonly SECTORS = SECTORS;
 
   showEmailModal = false;
-  recipientEmail = '';
+  selectedRecipients = new Set<string>();
   selectedIndices = new Set<number>();
   sendingEmail = false;
   emailError = '';
@@ -272,19 +253,24 @@ export class QuestionsPageComponent implements OnInit {
   private buildGroups() {
     const map = new Map<string, { q: FounderQuestion; originalIndex: number }[]>();
     this.questions.forEach((q, i) => {
-      const label = categorise(q.question);
+      const sector = (q as any).sector || '';
+      // If sector is not in the defined SECTORS list, assign to Legal and Compliance
+      const label = SECTORS.includes(sector as any) ? sector : 'Legal and Compliance';
       if (!map.has(label)) map.set(label, []);
       map.get(label)!.push({ q, originalIndex: i });
     });
-    this.groups = Array.from(map.entries()).map(([label, questions]) => ({ label, questions, flat: questions.map(x => x.q) }));
+    // Sort by SECTORS order
+    const ordered = SECTORS.map(s => [s, map.get(s) || []] as [string, { q: FounderQuestion; originalIndex: number }[]]);
+    this.groups = ordered.filter(([_, questions]) => questions.length > 0).map(([label, questions]) => ({ label, questions, flat: questions.map(x => x.q) }));
   }
 
   answeredCount() { return this.questions.filter(q => q.answer?.trim()).length; }
 
   confirmAddGlobal() {
-    if (!this.newQuestionText.trim()) return;
-    this.questions = [...this.questions, { question: this.newQuestionText.trim(), answer: '' }];
+    if (!this.newQuestionText.trim() || !this.newQuestionSector) return;
+    this.questions = [...this.questions, { question: this.newQuestionText.trim(), answer: '', sector: this.newQuestionSector } as any];
     this.newQuestionText = '';
+    this.newQuestionSector = '';
     this.addingGlobal = false;
     this.deckService.saveQuestions(this.deck!.id, this.questions).subscribe({
       next: res => { this.questions = res.founder_questions.map(q => ({ ...q })); this.buildGroups(); },
@@ -312,7 +298,15 @@ export class QuestionsPageComponent implements OnInit {
     this.suggesting = true;
     this.suggestions = [];
     this.deckService.suggestQuestions(this.deck!.id, this.suggestPrompt.trim()).subscribe({
-      next: res => { this.suggesting = false; this.suggestions = res.suggestions.map(s => ({ text: s, decided: false, accepted: false })); },
+      next: res => {
+        this.suggesting = false;
+        this.suggestions = res.suggestions.map((s: any) => ({
+          text: typeof s === 'string' ? s : s.question,
+          sector: typeof s === 'object' ? s.sector : '',
+          decided: false,
+          accepted: false
+        }));
+      },
       error: () => { this.suggesting = false; },
     });
   }
@@ -326,7 +320,7 @@ export class QuestionsPageComponent implements OnInit {
   suggestionAcceptedCount() { return this.suggestions.filter(s => s.accepted).length; }
 
   commitSuggestions() {
-    const toAdd = this.suggestions.filter(s => s.accepted).map(s => ({ question: s.text, answer: '' }));
+    const toAdd = this.suggestions.filter(s => s.accepted).map(s => ({ question: s.text, answer: '', sector: s.sector || '' }));
     if (!toAdd.length) return;
     this.questions = [...this.questions, ...toAdd];
     this.deckService.saveQuestions(this.deck!.id, this.questions).subscribe({
@@ -359,13 +353,25 @@ export class QuestionsPageComponent implements OnInit {
     if (this.deck) this.deck.founder_questions = [...this.questions];
   }
 
+  founderEmails(): string[] {
+    if (!this.deck) return [];
+    return [this.deck.founder_email_1, this.deck.founder_email_2, this.deck.founder_email_3]
+      .filter(e => e && e !== 'N/A');
+  }
+
   openEmailModal() {
     if (!this.deck) return;
-    this.recipientEmail = this.deck.founder_email || '';
+    this.selectedRecipients = new Set(this.founderEmails());
     this.selectedIndices = new Set(this.questions.map((_, i) => i));
     this.emailError = '';
     this.emailSuccess = false;
     this.showEmailModal = true;
+  }
+
+  toggleRecipient(email: string) {
+    if (this.selectedRecipients.has(email)) this.selectedRecipients.delete(email);
+    else this.selectedRecipients.add(email);
+    this.selectedRecipients = new Set(this.selectedRecipients);
   }
 
   toggleIndex(i: number) {
@@ -378,19 +384,24 @@ export class QuestionsPageComponent implements OnInit {
   clearSelection() { this.selectedIndices = new Set(); }
 
   sendEmail() {
-    if (!this.deck || !this.recipientEmail || !this.selectedIndices.size) return;
+    if (!this.deck || !this.selectedRecipients.size || !this.selectedIndices.size) return;
     this.sendingEmail = true;
     this.emailError = '';
-    this.deckService.emailQuestions(this.deck.id, this.recipientEmail, Array.from(this.selectedIndices)).subscribe({
-      next: res => {
-        this.deck!.emailed_questions = res.emailed_questions;
-        this.emailSuccess = true;
-        this.sendingEmail = false;
-        setTimeout(() => this.closeEmailModal(), 2000);
-      },
-      error: err => { this.emailError = err.error?.error || 'Failed to send email.'; this.sendingEmail = false; },
+    const indices = Array.from(this.selectedIndices);
+    const sends = Array.from(this.selectedRecipients).map(email =>
+      this.deckService.emailQuestions(this.deck!.id, email, indices).toPromise()
+    );
+    Promise.all(sends).then(results => {
+      const last = results[results.length - 1];
+      if (last) this.deck!.emailed_questions = last.emailed_questions;
+      this.emailSuccess = true;
+      this.sendingEmail = false;
+      setTimeout(() => this.closeEmailModal(), 2000);
+    }).catch(err => {
+      this.emailError = err?.error?.error || 'Failed to send email.';
+      this.sendingEmail = false;
     });
   }
 
-  closeEmailModal() { this.showEmailModal = false; this.recipientEmail = ''; this.emailError = ''; this.emailSuccess = false; }
+  closeEmailModal() { this.showEmailModal = false; this.selectedRecipients = new Set(); this.emailError = ''; this.emailSuccess = false; }
 }
